@@ -1,0 +1,5 @@
+enum TranslationMode {
+  translate,
+  dictionary,
+}
+
