@@ -14,14 +14,14 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
 
-  static const _pages = <Widget>[
-    HomePage(),
-    HistoryPage(),
-    SettingsPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = <Widget>[
+      HomePage(onOpenSettings: () => _selectPage(2)),
+      const HistoryPage(),
+      const SettingsPage(),
+    ];
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 840;
@@ -53,14 +53,14 @@ class _AppShellState extends State<AppShell> {
                   ],
                 ),
                 const VerticalDivider(width: 1),
-                Expanded(child: _pages[_selectedIndex]),
+                Expanded(child: pages[_selectedIndex]),
               ],
             ),
           );
         }
 
         return Scaffold(
-          body: _pages[_selectedIndex],
+          body: pages[_selectedIndex],
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _selectPage,
