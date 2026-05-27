@@ -85,7 +85,41 @@ class TranslateController extends StateNotifier<TranslateState> {
       return;
     }
 
+    if (!state.aiEnabled) {
+      state = state.copyWith(
+        currentMode: InputMode.aiTranslation,
+        sourceLanguage: TranslationLanguage.detect(text),
+        targetLanguage:
+            TranslationLanguage.detect(text) == TranslationLanguage.zh
+                ? TranslationLanguage.en
+                : TranslationLanguage.zh,
+        outputText: '本地词典无法可靠翻译完整句子，请开启 AI 翻译。',
+        errorMessage: null,
+        canUseAIExplanation: false,
+      );
+      return;
+    }
+
     await _translateWithAI(text);
+  }
+
+  void setAiEnabled(bool value) {
+    state = state.copyWith(aiEnabled: value);
+  }
+
+  Future<void> explainWithAI() async {
+    final inputText = state.lastDictionaryInput;
+    final dictionaryText = state.outputText.trim();
+    if (inputText == null || dictionaryText.isEmpty) {
+      state = state.copyWith(errorMessage: '请先查询本地词典结果');
+      return;
+    }
+    if (!state.aiEnabled) {
+      state = state.copyWith(errorMessage: '请先开启 AI');
+      return;
+    }
+
+    await _explainDictionaryWithAI(inputText, dictionaryText);
   }
 
   Future<void> _lookupDictionary(String text) async {
@@ -106,10 +140,14 @@ class TranslateController extends StateNotifier<TranslateState> {
     try {
       final result = await _dictionaryRepository.lookup(text);
       final outputText = _formatDictionaryResult(result);
+      final canUseAIExplanation =
+          result.hasEntries || outputText.contains('本地词典没有找到结果');
 
       state = state.copyWith(
         isLoading: false,
         outputText: outputText,
+        lastDictionaryInput: text,
+        canUseAIExplanation: canUseAIExplanation,
       );
 
       if (result.hasEntries) {
@@ -139,6 +177,7 @@ class TranslateController extends StateNotifier<TranslateState> {
       sourceLanguage: sourceLanguage,
       targetLanguage: targetLanguage,
       currentMode: InputMode.aiTranslation,
+      canUseAIExplanation: false,
     );
 
     try {
@@ -191,6 +230,76 @@ class TranslateController extends StateNotifier<TranslateState> {
 
   void clear() {
     state = const TranslateState();
+  }
+
+  Future<void> _explainDictionaryWithAI(
+    String inputText,
+    String dictionaryText,
+  ) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      currentMode: InputMode.aiExplanation,
+    );
+
+    try {
+      final settings = await _settingsRepository.load();
+      final config = settings.providerConfig;
+      final apiKey =
+          await _settingsRepository.readApiKey(config.apiKeyStorageKey);
+
+      if (apiKey == null || apiKey.trim().isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '请先在设置中填写 API Key',
+        );
+        return;
+      }
+
+      final provider = _providerFactory(config, apiKey);
+      _activeProvider = provider;
+      final sourceLanguage = TranslationLanguage.detect(inputText);
+
+      final result = await provider.translate(
+        TranslationRequest(
+          sourceText: '用户查询：$inputText\n\n本地词典结果：\n$dictionaryText',
+          sourceLanguage: sourceLanguage,
+          targetLanguage: TranslationLanguage.zh,
+          mode: TranslationMode.dictionary,
+          style: settings.translationStyle,
+        ),
+      );
+
+      final outputText = 'AI 解释\n\n${result.translatedText}';
+      state = state.copyWith(
+        isLoading: false,
+        outputText: outputText,
+        canUseAIExplanation: false,
+      );
+
+      if (settings.saveHistoryEnabled) {
+        await _historyRepository.add(
+          HistoryRecord(
+            id: const Uuid().v4(),
+            inputText: inputText,
+            outputText: outputText,
+            mode: TranslationMode.dictionary,
+            engine: 'llm_api',
+            sourceLanguage: sourceLanguage,
+            targetLanguage: TranslationLanguage.zh,
+            provider: result.provider,
+            model: result.model,
+            createdAt: DateTime.now(),
+          ),
+        );
+        await _onHistoryChanged?.call();
+      }
+    } on Object catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: TranslationErrorMapper.message(error),
+      );
+    }
   }
 
   Future<void> _saveHistory(TranslationResult result) async {
@@ -325,6 +434,9 @@ class TranslateState {
     this.outputText = '',
     this.isLoading = false,
     this.currentMode = InputMode.aiTranslation,
+    this.aiEnabled = true,
+    this.canUseAIExplanation = false,
+    this.lastDictionaryInput,
     this.errorMessage,
   });
 
@@ -333,17 +445,26 @@ class TranslateState {
   final String outputText;
   final bool isLoading;
   final InputMode currentMode;
+  final bool aiEnabled;
+  final bool canUseAIExplanation;
+  final String? lastDictionaryInput;
   final String? errorMessage;
 
   String get sourceLanguageLabel => sourceLanguage.label;
 
   String get targetLanguageLabel => targetLanguage.label;
 
-  String get actionLabel =>
-      currentMode == InputMode.localDictionary ? '查询' : '翻译';
+  String get actionLabel => switch (currentMode) {
+        InputMode.localDictionary => '查询',
+        InputMode.aiExplanation => 'AI 解释',
+        InputMode.aiTranslation => '翻译',
+      };
 
-  String get resultLabel =>
-      currentMode == InputMode.localDictionary ? '词典结果' : '译文';
+  String get resultLabel => switch (currentMode) {
+        InputMode.localDictionary => '词典结果',
+        InputMode.aiExplanation => 'AI 解释',
+        InputMode.aiTranslation => '译文',
+      };
 
   TranslateState copyWith({
     TranslationLanguage? sourceLanguage,
@@ -351,6 +472,9 @@ class TranslateState {
     String? outputText,
     bool? isLoading,
     InputMode? currentMode,
+    bool? aiEnabled,
+    bool? canUseAIExplanation,
+    Object? lastDictionaryInput = _sentinel,
     Object? errorMessage = _sentinel,
   }) {
     return TranslateState(
@@ -359,6 +483,11 @@ class TranslateState {
       outputText: outputText ?? this.outputText,
       isLoading: isLoading ?? this.isLoading,
       currentMode: currentMode ?? this.currentMode,
+      aiEnabled: aiEnabled ?? this.aiEnabled,
+      canUseAIExplanation: canUseAIExplanation ?? this.canUseAIExplanation,
+      lastDictionaryInput: identical(lastDictionaryInput, _sentinel)
+          ? this.lastDictionaryInput
+          : lastDictionaryInput as String?,
       errorMessage: identical(errorMessage, _sentinel)
           ? this.errorMessage
           : errorMessage as String?,

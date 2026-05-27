@@ -3,6 +3,7 @@ import '../utils/text_normalizer.dart';
 enum InputMode {
   localDictionary,
   aiTranslation,
+  aiExplanation,
 }
 
 class InputClassification {

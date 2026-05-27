@@ -97,6 +97,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _LanguageBar(
                     sourceLabel: state.sourceLanguageLabel,
                     targetLabel: state.targetLanguageLabel,
+                    aiEnabled: state.aiEnabled,
+                    onAiChanged: controller.setAiEnabled,
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -150,7 +152,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                     actionLabel: state.actionLabel,
                     isLoading: state.isLoading,
                     hasOutput: state.outputText.isNotEmpty,
+                    canUseAIExplanation: state.canUseAIExplanation,
                     onTranslate: () => _translate(controller),
+                    onExplain: controller.explainWithAI,
                     onClear: () => _clear(controller),
                     onCancel: controller.cancel,
                     onCopy: () => _copyResult(context, state.outputText),
@@ -197,10 +201,14 @@ class _LanguageBar extends StatelessWidget {
   const _LanguageBar({
     required this.sourceLabel,
     required this.targetLabel,
+    required this.aiEnabled,
+    required this.onAiChanged,
   });
 
   final String sourceLabel;
   final String targetLabel;
+  final bool aiEnabled;
+  final ValueChanged<bool> onAiChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +220,17 @@ class _LanguageBar extends StatelessWidget {
           child: Icon(Icons.arrow_forward),
         ),
         Chip(label: Text(targetLabel)),
+        const Spacer(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('启用 AI'),
+            Switch(
+              value: aiEnabled,
+              onChanged: onAiChanged,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -253,7 +272,9 @@ class _ActionBar extends StatelessWidget {
     required this.actionLabel,
     required this.isLoading,
     required this.hasOutput,
+    required this.canUseAIExplanation,
     required this.onTranslate,
+    required this.onExplain,
     required this.onClear,
     required this.onCancel,
     required this.onCopy,
@@ -262,7 +283,9 @@ class _ActionBar extends StatelessWidget {
   final String actionLabel;
   final bool isLoading;
   final bool hasOutput;
+  final bool canUseAIExplanation;
   final VoidCallback onTranslate;
+  final VoidCallback onExplain;
   final VoidCallback onClear;
   final VoidCallback onCancel;
   final VoidCallback onCopy;
@@ -288,6 +311,14 @@ class _ActionBar extends StatelessWidget {
           icon: const Icon(Icons.content_copy),
           label: const Text('复制'),
         ),
+        if (canUseAIExplanation) ...[
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onExplain,
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('AI 深度解释'),
+          ),
+        ],
         const Spacer(),
         if (isLoading)
           TextButton.icon(

@@ -105,4 +105,56 @@ void main() {
     expect(controller.state.outputText, contains('收费'));
     expect(historyRepository.records.single.engine, 'local_dictionary');
   });
+
+  test('explains local dictionary result with ai on demand', () async {
+    final repository = FakeSettingsRepository(initialApiKey: 'secret-key');
+    final historyRepository = FakeHistoryRepository();
+    final dictionaryRepository = FakeDictionaryRepository(
+      result: const DictionaryLookupResult(
+        entries: [
+          DictionaryEntry(
+            id: 1,
+            headword: 'charge',
+            normalizedHeadword: 'charge',
+            language: 'en',
+            direction: 'en_to_zh',
+            sourceName: 'test',
+            shortTranslation: '收费；指控',
+          ),
+        ],
+      ),
+    );
+    final fakeProvider = FakeTranslationProvider('charge 的核心含义是施加。');
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      dictionaryRepository,
+      (config, apiKey) => fakeProvider,
+    );
+
+    await controller.translate('charge');
+    await controller.explainWithAI();
+
+    expect(fakeProvider.lastRequest?.mode.name, 'dictionary');
+    expect(controller.state.outputText, contains('AI 解释'));
+    expect(controller.state.outputText, contains('核心含义'));
+    expect(historyRepository.records.first.engine, 'llm_api');
+  });
+
+  test('does not translate sentences when ai is disabled', () async {
+    final repository = FakeSettingsRepository(initialApiKey: 'secret-key');
+    final historyRepository = FakeHistoryRepository();
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      FakeDictionaryRepository(),
+      (config, apiKey) => FakeTranslationProvider('unused'),
+    );
+
+    controller.setAiEnabled(false);
+    await controller.translate('hello, how are you?');
+
+    expect(controller.state.outputText, contains('请开启 AI 翻译'));
+    expect(historyRepository.records, isEmpty);
+  });
 }
