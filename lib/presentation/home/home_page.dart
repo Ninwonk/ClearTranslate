@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/translate/translate_controller.dart';
 
 class HomePage extends ConsumerStatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.onOpenSettings});
+
+  final VoidCallback onOpenSettings;
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -31,6 +33,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             const _TranslateIntent(),
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
             const _TranslateIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyL):
+            const _ClearIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyL):
+            const _ClearIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyC):
+            const _CopyIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyC):
+            const _CopyIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.comma):
+            const _OpenSettingsIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.comma):
+            const _OpenSettingsIntent(),
         LogicalKeySet(LogicalKeyboardKey.escape): const _CancelIntent(),
       },
       child: Actions(
@@ -40,6 +54,20 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           _CancelIntent: CallbackAction<_CancelIntent>(
             onInvoke: (_) => controller.cancel(),
+          ),
+          _ClearIntent: CallbackAction<_ClearIntent>(
+            onInvoke: (_) => _clear(controller),
+          ),
+          _CopyIntent: CallbackAction<_CopyIntent>(
+            onInvoke: (_) {
+              if (state.outputText.isEmpty) {
+                return null;
+              }
+              return _copyResult(context, state.outputText);
+            },
+          ),
+          _OpenSettingsIntent: CallbackAction<_OpenSettingsIntent>(
+            onInvoke: (_) => widget.onOpenSettings(),
           ),
         },
         child: Focus(
@@ -275,4 +303,16 @@ class _TranslateIntent extends Intent {
 
 class _CancelIntent extends Intent {
   const _CancelIntent();
+}
+
+class _ClearIntent extends Intent {
+  const _ClearIntent();
+}
+
+class _CopyIntent extends Intent {
+  const _CopyIntent();
+}
+
+class _OpenSettingsIntent extends Intent {
+  const _OpenSettingsIntent();
 }

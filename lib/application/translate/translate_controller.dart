@@ -1,13 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../application/history/history_controller.dart';
 import '../../application/settings/settings_controller.dart';
+import '../../domain/entities/history_record.dart';
 import '../../domain/entities/provider_config.dart';
 import '../../domain/entities/translation_language.dart';
 import '../../domain/entities/translation_request.dart';
+import '../../domain/entities/translation_result.dart';
+import '../../domain/entities/translation_mode.dart';
 import '../../domain/providers/translation_provider.dart';
+import '../../domain/repositories/history_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../infrastructure/api/openai_compatible_client.dart';
 import '../../infrastructure/api/openai_compatible_translation_provider.dart';
+import '../../shared/errors/translation_error_mapper.dart';
 
 typedef TranslationProviderFactory = TranslationProvider Function(
   ProviderConfig config,
@@ -33,16 +40,23 @@ final translateControllerProvider =
     StateNotifierProvider<TranslateController, TranslateState>((ref) {
   return TranslateController(
     ref.watch(settingsRepositoryProvider),
+    ref.watch(historyRepositoryProvider),
     ref.watch(translationProviderFactoryProvider),
+    onHistoryChanged: () => ref.read(historyControllerProvider.notifier).load(),
   );
 });
 
 class TranslateController extends StateNotifier<TranslateState> {
-  TranslateController(this._settingsRepository, this._providerFactory)
-      : super(const TranslateState());
+  TranslateController(
+      this._settingsRepository, this._historyRepository, this._providerFactory,
+      {Future<void> Function()? onHistoryChanged})
+      : _onHistoryChanged = onHistoryChanged,
+        super(const TranslateState());
 
   final SettingsRepository _settingsRepository;
+  final HistoryRepository _historyRepository;
   final TranslationProviderFactory _providerFactory;
+  final Future<void> Function()? _onHistoryChanged;
   TranslationProvider? _activeProvider;
 
   Future<void> translate(String input) async {
@@ -94,10 +108,15 @@ class TranslateController extends StateNotifier<TranslateState> {
         isLoading: false,
         outputText: result.translatedText,
       );
+
+      if (settings.saveHistoryEnabled) {
+        await _saveHistory(result);
+        await _onHistoryChanged?.call();
+      }
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: '翻译失败：$error',
+        errorMessage: TranslationErrorMapper.message(error),
       );
     }
   }
@@ -109,6 +128,23 @@ class TranslateController extends StateNotifier<TranslateState> {
 
   void clear() {
     state = const TranslateState();
+  }
+
+  Future<void> _saveHistory(TranslationResult result) async {
+    await _historyRepository.add(
+      HistoryRecord(
+        id: const Uuid().v4(),
+        inputText: result.sourceText,
+        outputText: result.translatedText,
+        mode: TranslationMode.translate,
+        engine: 'llm_api',
+        sourceLanguage: result.sourceLanguage,
+        targetLanguage: result.targetLanguage,
+        provider: result.provider,
+        model: result.model,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 }
 
