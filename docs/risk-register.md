@@ -1,102 +1,119 @@
 # ClearTranslate Risk Register
 
-## 1. 四端同时适配拖慢进度
+## Dictionary Licensing
 
-风险：
+Risk:
 
-同时追求 Windows、macOS、Android、iOS 的完整体验，会让早期开发节奏变慢。
+Dictionary datasets may have unclear or restrictive licenses. Commercial dictionary dumps are especially risky.
 
-应对：
+Mitigation:
 
-- 代码结构支持四端
-- 开发顺序优先桌面端
-- 移动端在 Phase 3 单独优化
+- use only sources with explicit licenses
+- keep `docs/dictionary_sources.md` current
+- show attribution in the app before public release
+- do not bundle Oxford, Longman, Collins, Cambridge, Merriam-Webster, or other commercial dictionary data unless licensing is explicitly cleared
+- review licenses again before any public distribution
 
-## 2. 语音输入跨平台不稳定
+## CC-CEDICT Share-Alike
 
-风险：
+Risk:
 
-语音输入依赖平台能力和权限处理，桌面端尤其容易出现兼容性问题。
+CC-CEDICT is distributed under a Creative Commons Attribution-ShareAlike license. A bundled derived database may create attribution and share-alike obligations.
 
-应对：
+Mitigation:
 
-- 语音输入延后到 Phase 4
-- 只做短句输入
-- 不做会议转写和长音频转写
+- track source version, download date, and conversion script
+- include attribution and license link
+- publish derived dictionary metadata when distributing the app
+- treat legal review as required before public release
 
-## 3. 长文本翻译质量不稳定
+## FTS5 Platform Support
 
-风险：
+Risk:
 
-长文本可能出现漏翻、格式丢失、术语不一致、请求失败等问题。
+SQLite FTS5 may not be consistently available across every platform/runtime combination.
 
-应对：
+Mitigation:
 
-- 分段翻译
-- 保留 Markdown 和段落结构
-- 引入术语参考
-- 支持失败段落重试
-- 支持取消翻译
+- make exact lookup and prefix lookup work without FTS5
+- use FTS5 only for enhanced full-text definition search
+- isolate FTS5 migrations and queries
+- add runtime capability checks if needed
 
-## 4. API 成本不可控
+## Dictionary Size
 
-风险：
+Risk:
 
-长文本或频繁翻译会带来较高 API 成本。
+Bundled dictionaries can increase app size, especially on mobile.
 
-应对：
+Mitigation:
 
-- 个人版使用用户自己的 API Key
-- 设置最大输入长度
-- 长文本翻译前显示预计分段数量
-- 提供取消按钮
+- start with a practical `dictionary_v1.db`
+- use indexes carefully
+- consider desktop full dictionary and mobile lite dictionary later
+- evaluate compressed asset size before mobile release
 
-## 5. 产品范围膨胀
+## Mode Classification Errors
 
-风险：
+Risk:
 
-OCR、划词翻译、账号、云同步等功能很容易让项目复杂度失控。
+The app may classify short phrases or Chinese expressions incorrectly.
 
-应对：
+Mitigation:
 
-- MVP 只围绕翻译主流程
-- 非核心功能进入后续 Phase
-- 首页始终只保留一个核心动作
+- keep a visible `Use AI` / `AI Enhance` switch
+- allow no-result fallback to AI
+- avoid hiding user control
+- keep classifier rules simple and testable
 
-## 6. API Key 泄露
+## API Cost
 
-风险：
+Risk:
 
-如果 API Key 被写入普通数据库、日志或错误信息，可能造成安全问题。
+Long text and repeated AI explanation can consume API quota quickly.
 
-应对：
+Mitigation:
 
-- 使用 flutter_secure_storage
-- 数据库只保存 storage key name
-- 日志和错误信息不输出 API Key
-- 设置页 API Key 默认遮蔽显示
+- local dictionary handles common word lookup
+- show clear AI mode state
+- add long-text chunk count before translation
+- support cancel
 
-## 7. 本地数据库迁移复杂
+## API Key Leakage
 
-风险：
+Risk:
 
-随着历史、收藏、设置、Provider 配置增加，数据库结构会演进。
+API keys could leak through logs, normal database storage, or error output.
 
-应对：
+Mitigation:
 
-- 从第一版开始使用 Drift migration
-- 每次 schema 变更明确版本号
-- 避免随意修改已发布字段语义
+- store API keys through `flutter_secure_storage`
+- normal settings store only secure-storage key names
+- never log API keys
+- mask API key inputs
 
-## 8. 跨平台构建环境限制
+## Product Scope Creep
 
-风险：
+Risk:
 
-Flutter 不能在任意系统构建所有目标平台。iOS 和 macOS 需要 macOS，Windows 需要 Windows。
+OCR, selected-text translation, account sync, and local models can distract from the core product.
 
-应对：
+Mitigation:
 
-- 当前 Windows 环境优先验证 Windows 和 Android
-- macOS / iOS 后续在 macOS 环境构建
-- CI/CD 按目标平台拆分 runner
+- keep current roadmap focused on dictionary plus LLM API
+- explicitly exclude local translation models
+- defer OCR and selected-text translation
+- no account system or cloud sync in current plan
+
+## Cross-Platform Build Limits
+
+Risk:
+
+Flutter cannot build every target on every OS.
+
+Mitigation:
+
+- validate Windows and Android on Windows
+- validate macOS and iOS on macOS
+- split CI by target platform later
 

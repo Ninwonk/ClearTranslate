@@ -1,166 +1,96 @@
-# ClearTranslate 项目 Overview
+# ClearTranslate Overview
 
-## 1. 产品定位
+## Product Direction
 
-ClearTranslate 是一款面向个人高频使用场景的极简中英翻译工具，优先覆盖 Windows、macOS、Android、iOS 四端，并通过 Flutter 保持统一代码库和一致体验。
+ClearTranslate is a clean cross-platform Chinese-English translation tool built with Flutter for Windows, macOS, Android, and iOS.
 
-产品核心目标不是堆叠功能，而是提供一个打开即用、无广告、无账号依赖、无会员打扰的高质量翻译工具。
-
-核心使用路径：
+The product is no longer planned as a pure LLM translation client. The new direction is a hybrid tool:
 
 ```text
-输入文本 -> 翻译 -> 复制结果
+Local dictionary for speed.
+LLM API for depth and context.
 ```
 
-## 2. 产品名称
+## Positioning
 
-正式项目名：ClearTranslate
+ClearTranslate should be a fast, private, no-ad, no-membership personal translation tool.
 
-中文名可选：译简
+It should not try to copy large translation platforms. It should focus on a smaller and more controllable experience:
 
-命名原则：
+- word lookup should be instant and local
+- sentence and paragraph translation should be high quality
+- long text translation should preserve structure
+- API keys and history should stay local
+- no account system, cloud sync, ads, or membership flow
 
-- Clear：干净、清晰、无干扰
-- Translate：明确表达核心能力
-- 译简：中文语境下直观表达“简单翻译工具”
+## Core Principles
 
-## 3. 核心原则
+### Local First
 
-### 简单
+Single words, short phrases, and Chinese-to-English expression lookup should prefer the local dictionary database.
 
-首页只承载最核心的翻译流程。历史、设置、词典、长文本增强等能力服务于翻译体验，不喧宾夺主。
+Local dictionary lookup should be:
 
-### 高质量
+- offline
+- fast
+- structured
+- privacy-preserving
+- free from API cost
 
-翻译结果必须自然、准确，并尽量保留原文结构。长文本翻译要避免漏翻、乱断句、格式丢失和术语前后不一致。
+### AI For Complex Work
 
-### 四端统一体验
+LLM API should handle tasks where context matters:
 
-Flutter 作为统一开发框架。桌面端优先双栏布局，移动端优先上下布局，交互密度根据屏幕尺寸适配。
+- sentence translation
+- paragraph translation
+- long text translation
+- translation polishing
+- deep word explanation
+- examples and usage differences
+- confusing synonym explanation
 
-### 隐私优先
+### Minimal Interaction
 
-默认不做账号系统，不建设服务端，不上传历史记录到自有服务器。API Key 和历史记录仅本地保存。调用第三方模型时，用户输入会发送到对应 API 服务商。
+The home page still revolves around one flow:
 
-## 4. 目标用户
+```text
+input -> classify mode -> show result -> copy / favorite / AI enhance
+```
 
-第一目标用户是产品开发者本人及同类用户：
+No feed, ads, learning community, account system, or membership prompts.
 
-- 高频阅读英文资料、邮件、文档、技术内容的人
-- 需要处理中英文长文本的人
-- 需要一个干净、快速、没有广告和会员弹窗的翻译工具的人
-- 愿意自行配置 API Key 的个人用户
+## Engine Model
 
-## 5. 核心场景
+```text
+LocalDictionaryEngine
+└── words, phrases, Chinese expression lookup, suggestions, offline search
 
-### 快速翻译
+LLMTranslationEngine
+└── sentences, paragraphs, long text, AI explanation, polishing
+```
 
-用户粘贴一句话、邮件片段、聊天内容或技术说明，快速得到自然译文，并一键复制。
+Default behavior:
 
-关键体验：
+- word or short phrase: local dictionary first
+- sentence, paragraph, or long text: LLM API
+- user enables AI: force AI translation or AI explanation
+- local dictionary has no result: offer AI query
 
-- 自动识别中英文
-- 快速返回结果
-- 支持手动切换语言
-- 一键复制
-- 一键清空
+## Non-Goals
 
-### 长文本翻译
+Current planning excludes:
 
-用户粘贴文章、说明文档、论文摘要、合同片段或产品文案。系统按段落切分并逐段翻译，最后合并输出。
-
-关键体验：
-
-- 保留段落结构
-- 保留 Markdown、列表、编号、代码块
-- 显示翻译进度
-- 支持取消
-- 失败段落可重试
-
-### 单词词典
-
-用户输入单个英文单词或短语时，系统进入词典模式，输出结构化解释。
-
-关键体验：
-
-- 词性
-- 核心释义
-- 常见搭配
-- 例句和中文翻译
-- 近义词
-- 易混词区别
-- 使用建议
-
-### 语音输入
-
-语音输入作为后续阶段能力，只定位为短句输入，不作为会议转写或长音频转写工具。
-
-## 6. MVP 范围
-
-v0.1 版本聚焦桌面端优先可用：
-
-- 文本翻译
-- 中英自动识别
-- 手动切换源语言和目标语言
-- 一键复制结果
-- 一键清空输入
-- API Provider 设置
-- API Key 本地安全存储
-- 本地历史记录
-- 深色模式
-- 桌面快捷键
-
-暂不纳入 MVP：
-
+- local LLM
+- local machine translation model
+- runtime MDict parsing
+- runtime StarDict parsing
 - OCR
-- 划词翻译
-- 账号系统
-- 云同步
-- 会员系统
-- 社区
-- 学习计划
-- 长时间语音转写
-
-## 7. 信息架构
-
-```text
-首页
-├── 语言选择
-├── 输入区
-├── 输出区
-├── 操作栏
-└── 模式提示
-
-历史
-├── 最近翻译
-├── 收藏
-└── 搜索
-
-设置
-├── API 设置
-├── 模型设置
-├── 翻译偏好
-├── 外观
-└── 隐私设置
-
-关于
-├── 版本号
-├── 数据说明
-└── 快捷键说明
-```
-
-v0.1 可先实现首页、历史、设置。“关于”可延后。
-
-## 8. 成功标准
-
-v0.1 的成功不是功能完整，而是能稳定替代日常 50% 以上网页翻译需求。
-
-最低可接受标准：
-
-- 输入一句英文可以翻译成中文
-- 输入一句中文可以翻译成英文
-- API Key 不写死在代码里
-- 翻译失败时能看到可理解错误
-- 桌面端布局稳定，不遮挡、不拥挤
-- 历史记录本地可查
+- screenshot translation
+- selected-text translation
+- browser extension
+- account system
+- cloud sync
+- membership system
+- ads
+- learning community
 

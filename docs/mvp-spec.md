@@ -1,253 +1,168 @@
 # ClearTranslate MVP Spec
 
-## 1. MVP 目标
+## Current MVP Definition
 
-v0.1 的目标是做出一个开发者本人可以每天使用的桌面优先翻译工具。
+ClearTranslate MVP is split into two practical milestones:
 
-核心判断标准：
+1. AI text translation MVP
+2. local dictionary MVP
+
+This avoids blocking usable translation on dictionary data preparation, while keeping the final product direction local-dictionary-first.
+
+## Phase 1 MVP: AI Text Translation
+
+Goal:
+
+Make the current Windows/macOS desktop app reliable for sentence and paragraph translation.
+
+Required:
+
+- text input
+- automatic Chinese/English detection
+- OpenAI-compatible translation provider
+- API Base URL setting
+- API Key secure storage
+- model setting
+- one-click copy
+- clear input/output
+- readable error messages
+- basic local history
+- dark mode
+
+Done from Phase 0:
+
+- Windows app runs
+- OpenAI-compatible provider works
+- MiniMax response cleanup works
+- API Key is not hardcoded
+
+Still needed for Phase 1:
+
+- local history persistence
+- error message mapping
+- desktop shortcut polish
+- UI state polish
+
+## Phase 2 MVP: Local Dictionary
+
+Goal:
+
+Add instant offline lookup for common word and phrase cases.
+
+Required:
+
+- `dictionary_v1.db` asset
+- dictionary asset copy on first launch
+- English-to-Chinese lookup
+- Chinese-to-English lookup
+- alias-based inflection lookup
+- prefix suggestions
+- structured dictionary result UI
+- no-result state with AI query action
+
+Dictionary source candidates:
+
+- ECDICT for English-to-Chinese
+- CC-CEDICT for Chinese-to-English
+
+Dictionary runtime format:
 
 ```text
-是否愿意打开 ClearTranslate，而不是打开网页翻译。
+SQLite database only
 ```
 
-## 2. 平台范围
+Do not parse MDict or StarDict at runtime.
 
-优先支持：
+## Home Behavior
 
-- Windows
-- macOS
+Default mode:
 
-代码结构预留：
+- word: local dictionary
+- short phrase: local dictionary first
+- sentence: AI translation
+- paragraph: AI translation
 
-- Android
-- iOS
+Controls:
 
-MVP 不要求移动端发布，但 Flutter 项目结构和响应式布局不能阻碍后续移动端适配。
+- Translate / Query button label changes with mode
+- `Use AI` or `AI Enhance` switch can force AI behavior
+- local no-result can offer AI query
 
-## 3. 功能范围
+## Dictionary Result UI
 
-### P0：文本翻译
+English-to-Chinese example:
 
-用户可以输入中文或英文文本，点击翻译后得到目标语言译文。
+```text
+charge
+/ tʃɑːrdʒ /
 
-要求：
+v.
+1. 收费；要价
+2. 指控；控告
+3. 充电
 
-- 支持中文到英文
-- 支持英文到中文
-- 支持自动识别源语言
-- 支持手动选择源语言和目标语言
-- 保留换行和段落
-- 翻译结果只输出译文，不附加解释
+n.
+1. 费用
+2. 指控
 
-### P0：复制和清空
+Common phrases
+- in charge of
+- charge for
+- be charged with
 
-要求：
+Inflections
+- charges
+- charged
+- charging
+```
 
-- 一键复制译文
-- 一键清空输入和输出
-- 复制成功后给出轻量反馈
+Chinese-to-English example:
 
-### P0：API 设置
+```text
+负责
+pinyin: fu4 ze2
 
-用户可以在设置页配置：
+English expressions
+1. be responsible for
+2. be in charge of
+3. take responsibility for
+4. handle
+5. manage
+```
+
+## Settings
+
+### AI Settings
 
 - API Provider
 - API Base URL
 - API Key
-- 模型名称
+- Model
+- default AI enabled
+- translation style
 
-要求：
+### Local Dictionary Settings
 
-- API Key 不写死在代码中
-- API Key 使用安全存储
-- 普通数据库只保存 secure storage key name
-- API 配置错误时给出可理解提示
+- dictionary version
+- dictionary sources
+- enable English-to-Chinese
+- enable Chinese-to-English
+- show frequency
+- show tags
+- show inflections
 
-### P0：本地历史
+### Privacy Settings
 
-每次成功翻译后，根据设置保存历史记录。
+- save history
+- clear history
+- clear favorites
+- allow sending text to AI API
 
-保存字段：
+### Appearance
 
-- 输入内容
-- 输出内容
-- 源语言
-- 目标语言
-- 模式
-- Provider
-- 模型
-- 创建时间
-- 是否收藏
-
-要求：
-
-- 历史只保存在本地
-- 设置中可以关闭历史保存
-- 历史页可查看最近记录
-
-### P0：深色模式
-
-支持：
-
-- 跟随系统
-- 浅色
-- 深色
-
-MVP 可先做到全局主题切换，不需要复杂主题编辑。
-
-### P1：词典模式
-
-输入单个英文单词或短语时，可进入词典模式。
-
-触发规则：
-
-- 输入为单个英文单词
-- 或输入为较短英文短语
-- 或用户手动点击“查询”
-
-输出结构：
-
-```text
-1. 单词 / 短语
-2. 发音提示
-3. 词性
-4. 核心释义
-5. 常见用法
-6. 固定搭配
-7. 例句，中英双语
-8. 近义词
-9. 易混词区别
-10. 使用建议
-```
-
-### P1：桌面快捷键
-
-支持：
-
-- Ctrl / Cmd + Enter：翻译
-- Ctrl / Cmd + L：清空输入
-- Ctrl / Cmd + C：复制结果
-- Esc：取消请求
-- Ctrl / Cmd + ,：打开设置
-
-## 4. 暂不做功能
-
-MVP 明确不做：
-
-- 语音输入
-- OCR
-- 划词翻译
-- 网页翻译插件
-- 账号系统
-- 云同步
-- 会员系统
-- 社区
-- 学习打卡
-- 离线大模型
-- 浏览器插件
-
-## 5. 首页布局
-
-### 桌面端
-
-采用双栏布局：
-
-```text
-┌──────────────────────────────────────────────┐
-│ ClearTranslate                               │
-├──────────────────────────────────────────────┤
-│ Auto Detect -> 中文 / English                │
-├──────────────────────┬───────────────────────┤
-│ 输入区                │ 输出区                 │
-│                      │                       │
-│ 粘贴或输入文本...     │ 翻译结果...             │
-│                      │                       │
-├──────────────────────┴───────────────────────┤
-│ 翻译  清空  复制  收藏                        │
-└──────────────────────────────────────────────┘
-```
-
-### 移动端预留
-
-移动端后续采用上下布局：
-
-```text
-顶部：语言选择
-中部：输入框
-按钮：翻译 / 清空
-下部：输出结果
-底部：历史 / 设置
-```
-
-## 6. 设置页
-
-MVP 设置项：
-
-- API Provider
-- API Base URL
-- API Key
-- 模型名称
-- 默认目标语言
-- 是否保存历史
-- 主题模式
-- 长文本最大分段长度
-- 翻译风格
-
-翻译风格选项：
-
-- 自然
-- 准确
-- 正式
-- 简洁
-
-## 7. 历史页
-
-MVP 历史页能力：
-
-- 按时间倒序显示最近翻译
-- 展示原文摘要和译文摘要
-- 点击查看完整内容
-- 复制历史译文
-- 删除单条历史
-
-后续增强：
-
-- 搜索历史
-- 收藏筛选
-- 批量清理
-- 导出历史
-
-## 8. 长文本处理
-
-MVP 后半段加入长文本分段能力。
-
-基本策略：
-
-- 优先按段落切分
-- 单段超过阈值时再按句子或长度切分
-- 每个 chunk 单独请求
-- 请求完成后按顺序合并
-- UI 显示当前进度
-
-默认 chunk_size：
-
-```text
-2000 至 4000 字符，可配置
-```
-
-## 9. 验收清单
-
-MVP 完成时需要满足：
-
-- 可以配置 OpenAI-compatible API
-- API Key 不出现在代码中
-- 输入英文可翻译成中文
-- 输入中文可翻译成英文
-- 翻译结果可复制
-- 输入和输出可清空
-- 成功翻译后可写入历史
-- 可关闭历史保存
-- 可切换深色模式
-- 桌面快捷键可用
-- API 错误、网络错误、取消请求有明确反馈
+- follow system
+- light mode
+- dark mode
+- font size
+- compact mode
 

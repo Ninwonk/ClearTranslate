@@ -1,210 +1,216 @@
 # ClearTranslate Roadmap
 
-## 版本策略
+## Strategy
 
-ClearTranslate 采用“代码支持四端，开发分阶段验证”的策略。
-
-优先顺序：
+ClearTranslate uses a staged roadmap:
 
 ```text
-Windows / macOS 桌面端 -> Android -> iOS -> 语音和高级体验
+AI translation prototype -> AI text translation MVP -> local dictionary MVP -> AI dictionary enhancement -> long text -> mobile polish
 ```
 
-原因：
+The codebase should support Windows, macOS, Android, and iOS, but product validation starts on Windows/macOS desktop because copy, paste, keyboard input, and long text are easier to validate there.
 
-- 长文本翻译和复制粘贴在桌面端使用频率更高
-- 桌面端更适合验证核心价值
-- 移动端需要单独优化交互，不应只是桌面 UI 的缩小版
+## Phase 0: Prototype And Technical Validation
 
-## Phase 0：产品原型与技术验证
+Status: completed for Windows desktop.
 
-目标：确认 Flutter 项目、基础 UI、设置存储和 OpenAI-compatible 翻译链路可跑通。
+Goal:
 
-交付内容：
+- initialize Flutter project
+- create desktop-first UI skeleton
+- save API configuration locally
+- store API Key outside normal settings data
+- call an OpenAI-compatible API
+- translate English to Chinese and Chinese to English
+- build Windows release app
 
-- Flutter 项目初始化
-- 首页静态 UI
-- 设置页静态 UI
-- API Key 本地保存验证
-- OpenAI-compatible API 调用验证
-- 输入文本并返回翻译结果
-- 至少一个桌面端运行成功
-- 至少一个移动端模拟器运行成功
+Delivered:
 
-验收标准：
+- Flutter project skeleton
+- home, history, settings shells
+- OpenAI-compatible translation provider
+- settings persistence
+- secure API key storage
+- MiniMax-compatible output cleanup for `<think>` blocks
+- Windows release build
 
-- 输入英文可翻译成中文
-- 输入中文可翻译成英文
-- API Key 不写死在代码里
-- 桌面和手机尺寸下 UI 不崩
+Remaining optional validation:
 
-## Phase 1：MVP 文本翻译版
+- Android emulator smoke test
+- macOS build on macOS
 
-目标：做出日常可用的第一版。
+## Phase 1: AI Text Translation MVP
 
-功能范围：
+Goal:
 
-- 文本输入
-- 自动识别中英
-- 手动切换语言
-- 翻译结果输出
-- 一键复制
-- 一键清空
-- 基础错误提示
-- 本地历史记录
-- 设置默认模型
-- 深色模式
-- 桌面快捷键
+Make the current AI translation path reliable enough for daily desktop use.
 
-优先平台：
+Scope:
 
-- Windows
-- macOS
+- text input
+- automatic Chinese/English detection
+- AI translation
+- API Key settings
+- one-click copy
+- clear input/output
+- better error messages
+- local history records
+- dark mode
+- desktop basic layout
 
-验收标准：
+Acceptance:
 
-- 可替代日常 50% 以上网页翻译需求
-- 长段落不会明显丢格式
-- API Key、网络、模型返回失败等错误信息可理解
-- 主流程无明显卡顿
+- input English and get Chinese
+- input Chinese and get English
+- API Key is not hardcoded
+- missing API Key gives a clear message
+- provider errors are user-readable
+- Windows or macOS desktop app runs
 
-## Phase 2：长文本增强与词典模式
+## Phase 2: Local Dictionary MVP
 
-目标：形成 ClearTranslate 的核心差异点。
+Goal:
 
-功能范围：
+Add offline local dictionary lookup for words and short phrases.
 
-- 长文本自动分段
-- 翻译进度显示
-- 取消翻译
-- 分段失败重试
-- 保留 Markdown
-- 术语一致性提示
-- 单词自动识别
-- 词典模式结构化输出
-- 收藏词典查询结果
-- 历史搜索
+Scope:
 
-验收标准：
+- build `assets/dictionaries/dictionary_v1.db`
+- copy bundled dictionary database to app support directory on first launch
+- English word to Chinese lookup
+- English inflection lookup through aliases
+- Chinese word or phrase to English lookup
+- prefix suggestions
+- local no-result state
+- offer AI query when local lookup misses
+- structured dictionary result UI
+- dictionary lookup history
 
-- 输入长篇英文文章可稳定翻译
-- 输入 `set`、`run`、`charge` 等多义词时，输出明显优于普通单句翻译
-- 翻译过程中可以取消，不会卡死 UI
+Acceptance:
 
-## Phase 3：移动端适配
+- `charge` shows local dictionary result
+- `charged` resolves to `charge`
+- `负责` shows English expressions
+- `char` shows suggestions
+- dictionary lookup works offline
+- local lookup is visibly faster than AI request
 
-目标：让 Android 和 iOS 成为真正可用版本。
+## Phase 3: AI Dictionary Enhancement
 
-功能范围：
+Goal:
 
-- 移动端首页重构
-- 输入区和输出区上下布局
-- 底部导航
-- 移动端复制体验优化
-- 长按菜单
-- 系统分享入口
-- 从其他 App 分享文本到 ClearTranslate
-- Android 打包
-- iOS 打包
+Combine local dictionary speed with AI explanation depth.
 
-验收标准：
+Scope:
 
-- 手机上单手可用
-- 从浏览器、邮件、聊天软件复制文本后，打开 App 可以快速翻译
-- 移动端不出现桌面 UI 压缩导致的拥挤感
+- add a home-page `Use AI` / `AI Enhance` switch
+- word result page has `AI deep explanation`
+- Chinese-to-English result page has `AI explain differences`
+- local no-result can trigger AI query
+- AI explanation history
+- visually separate local dictionary content from AI content
 
-## Phase 4：语音输入
+Acceptance:
 
-目标：加入短句语音输入能力。
+- word and phrase inputs default to local dictionary
+- clicking AI explanation calls LLM
+- sentence input defaults to AI translation
+- when AI is disabled, sentence input explains that local dictionary cannot reliably translate full sentences
 
-功能范围：
+## Phase 4: Long Text Translation
 
-- 点击麦克风输入
-- 语音识别为文字
-- 识别完成后自动翻译
-- 支持中英文语音输入
-- 麦克风权限处理
-- 识别失败提示
-- 移动端优先优化
+Goal:
 
-取舍：
+Make longer translation reliable and cancellable.
 
-- 只做短句和日常表达
-- 不做长时间录音
-- 不做会议转写
-- 不做音频文件上传转写
+Scope:
 
-## Phase 5：体验优化
+- paragraph-based chunking
+- progress display
+- cancel request
+- retry failed chunk
+- preserve Markdown
+- terminology hints
+- style setting
 
-目标：让 ClearTranslate 成为长期使用也不打扰的工具。
+Acceptance:
 
-功能范围：
+- long text does not freeze UI
+- progress is visible
+- request can be cancelled
+- chunks merge in order
+- Markdown structure is mostly preserved
 
-- 快捷键完善
-- 系统托盘
-- 小窗模式
-- 最近一次翻译恢复
-- 收藏夹
-- 导出历史
-- 清理历史
-- 翻译风格模板
-- 自定义 Prompt
-- 术语表
+## Phase 5: Mobile Adaptation
 
-验收标准：
+Goal:
 
-- 打开速度和操作效率优于常用网页翻译
-- 复制、粘贴、翻译、复制结果的流程稳定在几秒内完成
-- UI 长时间使用不造成视觉疲劳
+Make Android and iOS usable, not just scaled-down desktop UI.
 
-## Phase 6：可选发布路线
+Scope:
 
-### 路线 A：个人工具
+- mobile vertical layout
+- bottom navigation
+- mobile copy/share behavior
+- share text into app
+- mobile dictionary result cards
+- Android build
+- iOS build
 
-不做账号、不做后端、不做支付。用户自行填写 API Key，客户端负责翻译、历史和设置。
+Acceptance:
 
-适合：
+- phone UI is usable one-handed
+- copied text can be quickly queried or translated
+- local dictionary lookup feels instant
+- no cramped desktop layout on mobile
 
-- 个人长期使用
-- 小范围开源
-- 降低维护成本
+## Phase 6: Experience Polish
 
-### 路线 B：公众发布
+Goal:
 
-增加服务端和商业化能力。
+Make the app feel like a refined daily tool.
 
-可能需要：
+Scope:
 
-- 账号系统
-- 服务端代理
-- 用量统计
-- 支付系统
-- 隐私政策
-- 服务条款
-- 额度限制
-- 日志系统
-- 滥用防护
+- desktop shortcuts
+- small window mode
+- restore last input
+- favorites
+- history search
+- history export
+- clear history
+- dictionary source page
+- custom prompts
 
-该路线复杂度显著上升，不建议早期进入。
+Acceptance:
 
-## 优先级表
+- copy, paste, query, copy result is fast
+- visual design stays quiet and clean
+- long-term use is not annoying
 
-| 优先级 | 功能 | 第一版是否做 |
+## Priority Table
+
+| Priority | Feature | Phase |
 | --- | --- | --- |
-| P0 | 文本翻译 | 是 |
-| P0 | 中英自动识别 | 是 |
-| P0 | 一键复制 | 是 |
-| P0 | API Key 设置 | 是 |
-| P0 | 本地历史 | 是 |
-| P0 | 深色模式 | 是 |
-| P1 | 长文本分段翻译 | MVP 后半段 |
-| P1 | 单词词典模式 | 是 |
-| P1 | 桌面快捷键 | 是 |
-| P2 | 语音输入 | 第二阶段 |
-| P2 | 收藏 | 第二阶段 |
-| P2 | 分享到 App | 移动端阶段 |
-| P3 | OCR | 暂不做 |
-| P3 | 划词翻译 | 暂不做 |
-| P3 | 云同步 | 暂不做 |
-| P3 | 账号系统 | 暂不做 |
+| P0 | AI text translation | Phase 1 |
+| P0 | API Key settings | Phase 1 |
+| P0 | one-click copy | Phase 1 |
+| P0 | local history | Phase 1 |
+| P0 | local English-to-Chinese dictionary | Phase 2 |
+| P0 | local Chinese-to-English dictionary | Phase 2 |
+| P0 | prebuilt dictionary database | Phase 2 |
+| P1 | English inflection lookup | Phase 2 |
+| P1 | prefix suggestions | Phase 2 |
+| P1 | AI deep explanation | Phase 3 |
+| P1 | Use AI switch | Phase 3 |
+| P1 | long text chunked translation | Phase 4 |
+| P2 | mobile adaptation | Phase 5 |
+| P2 | favorites | Phase 6 |
+| P2 | history search | Phase 6 |
+| P3 | voice input | deferred |
+| P3 | OCR | out of scope |
+| P3 | selected-text translation | out of scope |
+| P3 | local translation model | out of scope |
+| P3 | account system | out of scope |
+| P3 | cloud sync | out of scope |
 
