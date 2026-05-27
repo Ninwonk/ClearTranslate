@@ -59,4 +59,3 @@ class OpenAICompatibleClient {
     return content.trim();
   }
 }
-

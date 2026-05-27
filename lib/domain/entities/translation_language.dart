@@ -12,4 +12,3 @@ enum TranslationLanguage {
     return hasChinese ? TranslationLanguage.zh : TranslationLanguage.en;
   }
 }
-

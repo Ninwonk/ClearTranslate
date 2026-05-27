@@ -9,4 +9,3 @@ abstract interface class TranslationProvider {
 
   Future<void> cancel(String requestId);
 }
-

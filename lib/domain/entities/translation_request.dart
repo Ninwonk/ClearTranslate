@@ -16,4 +16,3 @@ class TranslationRequest {
   final TranslationMode mode;
   final String style;
 }
-

@@ -2,4 +2,3 @@ enum TranslationMode {
   translate,
   dictionary,
 }
-

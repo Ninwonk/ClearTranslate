@@ -18,4 +18,3 @@ class ClearTranslateApp extends StatelessWidget {
     );
   }
 }
-

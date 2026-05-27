@@ -12,4 +12,3 @@ void main() {
     expect(find.text('设置'), findsWidgets);
   });
 }
-

@@ -7,4 +7,3 @@ class DictionaryEntry {
   final String term;
   final String content;
 }
-

@@ -20,4 +20,3 @@ class TranslationResult {
   final String provider;
   final String model;
 }
-

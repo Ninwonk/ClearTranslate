@@ -12,7 +12,8 @@ class MockTranslationProvider implements TranslationProvider {
 
     return TranslationResult(
       sourceText: request.sourceText,
-      translatedText: '[Mock] ${request.targetLanguage.label}: ${request.sourceText}',
+      translatedText:
+          '[Mock] ${request.targetLanguage.label}: ${request.sourceText}',
       sourceLanguage: request.sourceLanguage,
       targetLanguage: request.targetLanguage,
       mode: request.mode,
@@ -32,4 +33,3 @@ class MockTranslationProvider implements TranslationProvider {
   @override
   Future<void> cancel(String requestId) async {}
 }
-

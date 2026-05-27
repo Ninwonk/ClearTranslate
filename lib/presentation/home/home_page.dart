@@ -276,4 +276,3 @@ class _TranslateIntent extends Intent {
 class _CancelIntent extends Intent {
   const _CancelIntent();
 }
-

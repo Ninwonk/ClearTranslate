@@ -1,23 +1,49 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/settings/settings_controller.dart';
+import '../../domain/entities/provider_config.dart';
 import '../../domain/entities/translation_language.dart';
 import '../../domain/entities/translation_request.dart';
 import '../../domain/providers/translation_provider.dart';
-import '../../infrastructure/api/mock_translation_provider.dart';
+import '../../domain/repositories/settings_repository.dart';
+import '../../infrastructure/api/openai_compatible_client.dart';
+import '../../infrastructure/api/openai_compatible_translation_provider.dart';
 
-final translationProvider = Provider<TranslationProvider>(
-  (ref) => const MockTranslationProvider(),
+typedef TranslationProviderFactory = TranslationProvider Function(
+  ProviderConfig config,
+  String apiKey,
+);
+
+final translationProviderFactoryProvider = Provider<TranslationProviderFactory>(
+  (ref) {
+    return (config, apiKey) {
+      return OpenAICompatibleTranslationProvider(
+        client: OpenAICompatibleClient(
+          baseUrl: config.baseUrl,
+          apiKey: apiKey,
+        ),
+        model: config.modelName,
+        providerName: config.providerName,
+      );
+    };
+  },
 );
 
 final translateControllerProvider =
     StateNotifierProvider<TranslateController, TranslateState>((ref) {
-  return TranslateController(ref.watch(translationProvider));
+  return TranslateController(
+    ref.watch(settingsRepositoryProvider),
+    ref.watch(translationProviderFactoryProvider),
+  );
 });
 
 class TranslateController extends StateNotifier<TranslateState> {
-  TranslateController(this._provider) : super(const TranslateState());
+  TranslateController(this._settingsRepository, this._providerFactory)
+      : super(const TranslateState());
 
-  final TranslationProvider _provider;
+  final SettingsRepository _settingsRepository;
+  final TranslationProviderFactory _providerFactory;
+  TranslationProvider? _activeProvider;
 
   Future<void> translate(String input) async {
     final text = input.trim();
@@ -39,11 +65,28 @@ class TranslateController extends StateNotifier<TranslateState> {
     );
 
     try {
-      final result = await _provider.translate(
+      final settings = await _settingsRepository.load();
+      final config = settings.providerConfig;
+      final apiKey =
+          await _settingsRepository.readApiKey(config.apiKeyStorageKey);
+
+      if (apiKey == null || apiKey.trim().isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '请先在设置中填写 API Key',
+        );
+        return;
+      }
+
+      final provider = _providerFactory(config, apiKey);
+      _activeProvider = provider;
+
+      final result = await provider.translate(
         TranslationRequest(
           sourceText: text,
           sourceLanguage: sourceLanguage,
           targetLanguage: targetLanguage,
+          style: settings.translationStyle,
         ),
       );
 
@@ -60,6 +103,7 @@ class TranslateController extends StateNotifier<TranslateState> {
   }
 
   void cancel() {
+    _activeProvider?.cancel('active');
     state = state.copyWith(isLoading: false, errorMessage: '已取消翻译');
   }
 

@@ -91,4 +91,3 @@ class _AppShellState extends State<AppShell> {
     setState(() => _selectedIndex = index);
   }
 }
-
