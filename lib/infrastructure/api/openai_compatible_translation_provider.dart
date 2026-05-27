@@ -3,6 +3,7 @@ import '../../domain/entities/translation_request.dart';
 import '../../domain/entities/translation_result.dart';
 import '../../domain/providers/translation_provider.dart';
 import '../../shared/prompts/translation_prompts.dart';
+import '../../shared/utils/translation_output_cleaner.dart';
 import 'openai_compatible_client.dart';
 
 class OpenAICompatibleTranslationProvider implements TranslationProvider {
@@ -25,7 +26,7 @@ class OpenAICompatibleTranslationProvider implements TranslationProvider {
 
     return TranslationResult(
       sourceText: request.sourceText,
-      translatedText: translatedText,
+      translatedText: TranslationOutputCleaner.clean(translatedText),
       sourceLanguage: request.sourceLanguage,
       targetLanguage: request.targetLanguage,
       mode: request.mode,
