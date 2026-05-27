@@ -24,10 +24,7 @@ class MockTranslationProvider implements TranslationProvider {
 
   @override
   Future<DictionaryEntry> lookup(String term) async {
-    return DictionaryEntry(
-      term: term,
-      content: 'Dictionary mode is not implemented yet.',
-    );
+    throw UnimplementedError('Dictionary mode is handled by local repository.');
   }
 
   @override

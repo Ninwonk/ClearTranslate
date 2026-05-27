@@ -1,8 +1,10 @@
 import 'package:clear_translate/application/translate/translate_controller.dart';
 import 'package:clear_translate/domain/entities/app_settings.dart';
+import 'package:clear_translate/domain/entities/dictionary_entry.dart';
 import 'package:clear_translate/domain/entities/translation_language.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fakes/fake_dictionary_repository.dart';
 import '../fakes/fake_history_repository.dart';
 import '../fakes/fake_settings_repository.dart';
 import '../fakes/fake_translation_provider.dart';
@@ -15,6 +17,7 @@ void main() {
     final controller = TranslateController(
       repository,
       historyRepository,
+      FakeDictionaryRepository(),
       (config, apiKey) {
         expect(apiKey, 'secret-key');
         expect(config.modelName, 'gpt-4o-mini');
@@ -22,14 +25,14 @@ void main() {
       },
     );
 
-    await controller.translate('hello');
+    await controller.translate('hello, how are you?');
 
     expect(controller.state.outputText, '你好');
     expect(controller.state.sourceLanguage, TranslationLanguage.en);
     expect(controller.state.targetLanguage, TranslationLanguage.zh);
-    expect(fakeProvider.lastRequest?.sourceText, 'hello');
+    expect(fakeProvider.lastRequest?.sourceText, 'hello, how are you?');
     expect(historyRepository.records, hasLength(1));
-    expect(historyRepository.records.single.inputText, 'hello');
+    expect(historyRepository.records.single.inputText, 'hello, how are you?');
     expect(historyRepository.records.single.outputText, '你好');
   });
 
@@ -39,10 +42,11 @@ void main() {
     final controller = TranslateController(
       repository,
       historyRepository,
+      FakeDictionaryRepository(),
       (config, apiKey) => FakeTranslationProvider('unused'),
     );
 
-    await controller.translate('hello');
+    await controller.translate('hello, how are you?');
 
     expect(controller.state.outputText, isEmpty);
     expect(controller.state.errorMessage, '请先在设置中填写 API Key');
@@ -59,12 +63,46 @@ void main() {
     final controller = TranslateController(
       repository,
       historyRepository,
+      FakeDictionaryRepository(),
       (config, apiKey) => FakeTranslationProvider('你好'),
     );
 
-    await controller.translate('hello');
+    await controller.translate('hello, how are you?');
 
     expect(controller.state.outputText, '你好');
     expect(historyRepository.records, isEmpty);
+  });
+
+  test('uses local dictionary for short word input', () async {
+    final repository = FakeSettingsRepository(initialApiKey: 'secret-key');
+    final historyRepository = FakeHistoryRepository();
+    final dictionaryRepository = FakeDictionaryRepository(
+      result: const DictionaryLookupResult(
+        entries: [
+          DictionaryEntry(
+            id: 1,
+            headword: 'charge',
+            normalizedHeadword: 'charge',
+            language: 'en',
+            direction: 'en_to_zh',
+            sourceName: 'test',
+            shortTranslation: '收费；指控',
+          ),
+        ],
+      ),
+    );
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      dictionaryRepository,
+      (config, apiKey) => FakeTranslationProvider('unused'),
+    );
+
+    await controller.translate('charge');
+
+    expect(dictionaryRepository.lastQuery, 'charge');
+    expect(controller.state.outputText, contains('charge'));
+    expect(controller.state.outputText, contains('收费'));
+    expect(historyRepository.records.single.engine, 'local_dictionary');
   });
 }

@@ -117,7 +117,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                         );
                         final outputPanel = _TextPanel(
-                          title: '译文',
+                          title: state.resultLabel,
                           child: SelectableText(
                             state.outputText.isEmpty
                                 ? '翻译结果会显示在这里'
@@ -147,6 +147,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(height: 12),
                   _ActionBar(
+                    actionLabel: state.actionLabel,
                     isLoading: state.isLoading,
                     hasOutput: state.outputText.isNotEmpty,
                     onTranslate: () => _translate(controller),
@@ -249,6 +250,7 @@ class _TextPanel extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.actionLabel,
     required this.isLoading,
     required this.hasOutput,
     required this.onTranslate,
@@ -257,6 +259,7 @@ class _ActionBar extends StatelessWidget {
     required this.onCopy,
   });
 
+  final String actionLabel;
   final bool isLoading;
   final bool hasOutput;
   final VoidCallback onTranslate;
@@ -271,7 +274,7 @@ class _ActionBar extends StatelessWidget {
         FilledButton.icon(
           onPressed: isLoading ? null : onTranslate,
           icon: const Icon(Icons.translate),
-          label: const Text('翻译'),
+          label: Text(actionLabel),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(

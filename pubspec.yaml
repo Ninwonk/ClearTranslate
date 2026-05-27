@@ -14,6 +14,7 @@ dependencies:
   flutter_riverpod: ^2.5.1
   dio: ^5.7.0
   drift: ^2.21.0
+  sqlite3: ^3.3.2
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.4
   path: ^1.9.0
@@ -29,3 +30,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/dictionaries/dictionary_v1.db
