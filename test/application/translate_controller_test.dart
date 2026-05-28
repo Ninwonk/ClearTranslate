@@ -201,7 +201,10 @@ void main() {
 
   test('translates long text in chunks and stores merged history', () async {
     final repository = FakeSettingsRepository(
-      initialSettings: AppSettings.defaults().copyWith(chunkSize: 220),
+      initialSettings: AppSettings.defaults().copyWith(
+        chunkSize: 220,
+        glossary: 'ClearTranslate = ClearTranslate',
+      ),
       initialApiKey: 'secret-key',
     );
     final historyRepository = FakeHistoryRepository();
@@ -223,6 +226,8 @@ void main() {
     expect(fakeProvider.requests.first.currentChunk, 1);
     expect(
         fakeProvider.requests.first.totalChunks, fakeProvider.requests.length);
+    expect(fakeProvider.requests.first.glossary,
+        'ClearTranslate = ClearTranslate');
     expect(controller.state.isLongText, isTrue);
     expect(controller.state.completedChunks, fakeProvider.requests.length);
     expect(controller.state.outputText, contains('第一段译文'));

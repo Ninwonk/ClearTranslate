@@ -230,6 +230,7 @@ class TranslateController extends StateNotifier<TranslateState> {
           sourceLanguage: sourceLanguage,
           targetLanguage: targetLanguage,
           style: settings.translationStyle,
+          glossary: settings.glossary,
         ),
       );
 
@@ -316,6 +317,7 @@ class TranslateController extends StateNotifier<TranslateState> {
               sourceLanguage: _lastLongTextSourceLanguage!,
               targetLanguage: _lastLongTextTargetLanguage!,
               style: settings.translationStyle,
+              glossary: settings.glossary,
               currentChunk: index + 1,
               totalChunks: _lastLongTextChunks.length,
             ),
@@ -486,6 +488,7 @@ class TranslateController extends StateNotifier<TranslateState> {
             sourceLanguage: sourceLanguage,
             targetLanguage: targetLanguage,
             style: settings.translationStyle,
+            glossary: settings.glossary,
             currentChunk: index + 1,
             totalChunks: chunks.length,
           ),

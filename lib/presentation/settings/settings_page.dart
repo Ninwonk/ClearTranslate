@@ -19,6 +19,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _apiKeyController = TextEditingController();
   final _modelController = TextEditingController();
   final _chunkSizeController = TextEditingController();
+  final _glossaryController = TextEditingController();
 
   bool _hasBoundState = false;
   bool _saveHistoryEnabled = true;
@@ -32,6 +33,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _apiKeyController.dispose();
     _modelController.dispose();
     _chunkSizeController.dispose();
+    _glossaryController.dispose();
     super.dispose();
   }
 
@@ -102,6 +104,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             decoration: const InputDecoration(
               labelText: '长文本分段长度',
               prefixIcon: Icon(Icons.segment),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _glossaryController,
+            minLines: 3,
+            maxLines: 6,
+            decoration: const InputDecoration(
+              labelText: '术语表 / 长文本术语提示',
+              hintText:
+                  'ClearTranslate = ClearTranslate\nlocal dictionary = 本地词典',
+              prefixIcon: Icon(Icons.article_outlined),
+              alignLabelWithHint: true,
             ),
           ),
           const SizedBox(height: 12),
@@ -199,6 +214,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _apiKeyController.text = state.apiKey;
     _modelController.text = settings.providerConfig.modelName;
     _chunkSizeController.text = settings.chunkSize.toString();
+    _glossaryController.text = settings.glossary;
     _saveHistoryEnabled = settings.saveHistoryEnabled;
     _translationStyle = settings.translationStyle;
     _showWindowHotKey = DesktopHotKeys.showWindow(settings);
@@ -219,6 +235,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       translationStyle: _translationStyle,
       saveHistoryEnabled: _saveHistoryEnabled,
       chunkSize: chunkSize,
+      glossary: _glossaryController.text,
       showWindowHotKey: _showWindowHotKey == null
           ? null
           : DesktopHotKeys.toJson(_showWindowHotKey!),

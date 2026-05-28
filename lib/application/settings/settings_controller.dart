@@ -49,6 +49,7 @@ class SettingsController extends StateNotifier<SettingsState> {
     required String translationStyle,
     required bool saveHistoryEnabled,
     required int chunkSize,
+    required String glossary,
     Map<String, Object?>? showWindowHotKey,
     Map<String, Object?>? clearInputHotKey,
   }) async {
@@ -81,6 +82,7 @@ class SettingsController extends StateNotifier<SettingsState> {
         translationStyle: translationStyle,
         saveHistoryEnabled: saveHistoryEnabled,
         chunkSize: chunkSize,
+        glossary: glossary.trim(),
         providerConfig: providerConfig,
         showWindowHotKey: showWindowHotKey,
         clearInputHotKey: clearInputHotKey,

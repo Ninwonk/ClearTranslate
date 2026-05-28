@@ -32,6 +32,7 @@ class TranslationPrompts {
 5. 如果原文有明显错别字，可在不改变意思的前提下自然修正。
 6. 翻译风格：${request.style}
 7. 不要输出思考过程、分析说明或 <think> 标签。
+${_glossaryBlock(request.glossary)}
 
 用户输入：
 ${request.sourceText}
@@ -59,6 +60,7 @@ ${request.sourceText}
 4. 翻译自然、准确、符合目标语言表达习惯。
 5. 翻译风格：${request.style}
 6. 不要输出思考过程、分析说明或 <think> 标签。
+${_glossaryBlock(request.glossary)}
 
 当前分段：
 ${request.sourceText}
@@ -98,5 +100,18 @@ $content
       TranslationLanguage.zh => '中文',
       TranslationLanguage.en => 'English',
     };
+  }
+
+  static String _glossaryBlock(String glossary) {
+    final trimmed = glossary.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+    return '''
+
+术语参考：
+$trimmed
+
+请尽量保持这些术语、专名和表达方式一致。''';
   }
 }
