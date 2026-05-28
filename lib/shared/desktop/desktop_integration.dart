@@ -62,7 +62,7 @@ class DesktopIntegration with WindowListener, TrayListener {
 
     await _tryRegisterHotKey(
       DesktopHotKeys.showWindow(settings),
-      (_) => showTranslateWindow(),
+      (_) => toggleTranslateWindow(),
     );
 
     await _tryRegisterHotKey(
@@ -86,6 +86,18 @@ class DesktopIntegration with WindowListener, TrayListener {
     await windowManager.show();
     await windowManager.focus();
     DesktopCommands.instance.requestShowTranslate();
+  }
+
+  Future<void> toggleTranslateWindow() async {
+    final isVisible = await windowManager.isVisible();
+    final isFocused = await windowManager.isFocused();
+
+    if (isVisible && isFocused) {
+      await _hideToTray();
+      return;
+    }
+
+    await showTranslateWindow();
   }
 
   Future<void> _hideToTray() async {
