@@ -12,11 +12,17 @@ coverage/
 # Flutter generated
 flutter_*.png
 flutter_*.log
+assets/dictionaries/*.db
 
 # IDE
 .idea/
 .vscode/
 *.iml
+
+# Python
+__pycache__/
+*.py[cod]
+tools/dictionary_builder/sources/
 
 # OS
 .DS_Store

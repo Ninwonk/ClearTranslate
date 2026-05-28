@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'history/history_page.dart';
 import 'home/home_page.dart';
 import 'settings/settings_page.dart';
+import '../shared/desktop/desktop_commands.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -13,6 +14,22 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    DesktopCommands.instance.showTranslateRequests.addListener(
+      _handleShowTranslateRequest,
+    );
+  }
+
+  @override
+  void dispose() {
+    DesktopCommands.instance.showTranslateRequests.removeListener(
+      _handleShowTranslateRequest,
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,5 +106,12 @@ class _AppShellState extends State<AppShell> {
 
   void _selectPage(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  void _handleShowTranslateRequest() {
+    if (!mounted || _selectedIndex == 0) {
+      return;
+    }
+    setState(() => _selectedIndex = 0);
   }
 }

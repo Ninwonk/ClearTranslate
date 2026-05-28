@@ -43,6 +43,13 @@ Expected qualities:
 - privacy-preserving
 - no API cost
 
+Current implementation:
+
+- ECDICT powers English-to-Chinese lookup.
+- CC-CEDICT powers Chinese-to-English lookup.
+- The app ships a compressed SQLite dictionary asset and queries the decompressed local database at runtime.
+- The app does not parse MDict, StarDict, CSV, or source dictionary files at runtime.
+
 ## LLM API
 
 LLM API handles:
@@ -55,6 +62,8 @@ LLM API handles:
 - examples
 - synonym and confusing-word explanation
 - English expression difference explanation
+
+AI output should be cleaned and rendered for reading. Reasoning tags such as MiniMax `<think>` blocks should not be displayed in normal translation output, and Markdown-style AI explanation output should be rendered as preview content where practical.
 
 ## Input Mode Classification
 
@@ -154,3 +163,32 @@ No local dictionary result found.
 
 Do not add web search in the first dictionary version.
 
+## Desktop Behavior
+
+Windows and macOS are first-class desktop targets.
+
+Expected behavior:
+
+- closing the window hides the app to the system tray/menu bar instead of quitting
+- tray/menu-bar icon can reopen the app
+- tray/menu-bar context menu can quit the app
+- a configurable global shortcut toggles show/hide
+- a configurable global shortcut clears the input area
+
+Default shortcuts:
+
+- Windows show/hide: `Ctrl + Shift + Space`
+- macOS show/hide: `Cmd + Shift + Space`
+- Windows clear input: `Ctrl + Shift + L`
+- macOS clear input: `Cmd + Shift + L`
+
+## History
+
+History should support quick review rather than only raw cards.
+
+Current behavior:
+
+- left side: searchable history list
+- right side: selected record detail preview
+- keyword search matches input, output, language labels, provider, and model
+- AI explanation history should render Markdown-friendly output in the detail pane

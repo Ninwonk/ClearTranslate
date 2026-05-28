@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/translate/translate_controller.dart';
+import '../../shared/desktop/desktop_commands.dart';
+import '../../shared/input/input_classifier.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, required this.onOpenSettings});
@@ -15,10 +18,29 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final _inputController = TextEditingController();
+  final _inputFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    DesktopCommands.instance.clearInputRequests.addListener(
+      _handleDesktopClearRequest,
+    );
+    DesktopCommands.instance.showTranslateRequests.addListener(
+      _handleDesktopShowRequest,
+    );
+  }
 
   @override
   void dispose() {
+    DesktopCommands.instance.clearInputRequests.removeListener(
+      _handleDesktopClearRequest,
+    );
+    DesktopCommands.instance.showTranslateRequests.removeListener(
+      _handleDesktopShowRequest,
+    );
     _inputController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -97,6 +119,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _LanguageBar(
                     sourceLabel: state.sourceLanguageLabel,
                     targetLabel: state.targetLanguageLabel,
+                    aiEnabled: state.aiEnabled,
+                    onAiChanged: controller.setAiEnabled,
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -107,6 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           title: '输入',
                           child: TextField(
                             controller: _inputController,
+                            focusNode: _inputFocusNode,
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
@@ -117,11 +142,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                         );
                         final outputPanel = _TextPanel(
-                          title: '译文',
-                          child: SelectableText(
-                            state.outputText.isEmpty
-                                ? '翻译结果会显示在这里'
-                                : state.outputText,
+                          title: state.resultLabel,
+                          child: _ResultView(
+                            text: state.outputText,
+                            mode: state.currentMode,
                           ),
                         );
 
@@ -147,9 +171,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(height: 12),
                   _ActionBar(
+                    actionLabel: state.actionLabel,
                     isLoading: state.isLoading,
                     hasOutput: state.outputText.isNotEmpty,
+                    canUseAIExplanation: state.canUseAIExplanation,
+                    aiAssistLabel: state.aiAssistLabel,
                     onTranslate: () => _translate(controller),
+                    onExplain: controller.explainWithAI,
                     onClear: () => _clear(controller),
                     onCancel: controller.cancel,
                     onCopy: () => _copyResult(context, state.outputText),
@@ -181,6 +209,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     controller.clear();
   }
 
+  void _handleDesktopClearRequest() {
+    _clear(ref.read(translateControllerProvider.notifier));
+    _inputFocusNode.requestFocus();
+  }
+
+  void _handleDesktopShowRequest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _inputFocusNode.requestFocus();
+    });
+  }
+
   Future<void> _copyResult(BuildContext context, String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) {
@@ -192,14 +234,60 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
+class _ResultView extends StatelessWidget {
+  const _ResultView({
+    required this.text,
+    required this.mode,
+  });
+
+  final String text;
+  final InputMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.isEmpty) {
+      return const SelectableText('翻译结果会显示在这里');
+    }
+
+    if (mode != InputMode.aiExplanation) {
+      return SelectableText(text);
+    }
+
+    final theme = Theme.of(context);
+    return Markdown(
+      data: text,
+      selectable: true,
+      padding: EdgeInsets.zero,
+      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+        h1: theme.textTheme.titleLarge,
+        h2: theme.textTheme.titleMedium,
+        h3: theme.textTheme.titleSmall,
+        p: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
+        blockquoteDecoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
+              width: 3,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LanguageBar extends StatelessWidget {
   const _LanguageBar({
     required this.sourceLabel,
     required this.targetLabel,
+    required this.aiEnabled,
+    required this.onAiChanged,
   });
 
   final String sourceLabel;
   final String targetLabel;
+  final bool aiEnabled;
+  final ValueChanged<bool> onAiChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +299,17 @@ class _LanguageBar extends StatelessWidget {
           child: Icon(Icons.arrow_forward),
         ),
         Chip(label: Text(targetLabel)),
+        const Spacer(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('启用 AI'),
+            Switch(
+              value: aiEnabled,
+              onChanged: onAiChanged,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -249,17 +348,25 @@ class _TextPanel extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.actionLabel,
     required this.isLoading,
     required this.hasOutput,
+    required this.canUseAIExplanation,
+    required this.aiAssistLabel,
     required this.onTranslate,
+    required this.onExplain,
     required this.onClear,
     required this.onCancel,
     required this.onCopy,
   });
 
+  final String actionLabel;
   final bool isLoading;
   final bool hasOutput;
+  final bool canUseAIExplanation;
+  final String aiAssistLabel;
   final VoidCallback onTranslate;
+  final VoidCallback onExplain;
   final VoidCallback onClear;
   final VoidCallback onCancel;
   final VoidCallback onCopy;
@@ -271,7 +378,7 @@ class _ActionBar extends StatelessWidget {
         FilledButton.icon(
           onPressed: isLoading ? null : onTranslate,
           icon: const Icon(Icons.translate),
-          label: const Text('翻译'),
+          label: Text(actionLabel),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(
@@ -285,6 +392,14 @@ class _ActionBar extends StatelessWidget {
           icon: const Icon(Icons.content_copy),
           label: const Text('复制'),
         ),
+        if (canUseAIExplanation) ...[
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onExplain,
+            icon: const Icon(Icons.auto_awesome),
+            label: Text(aiAssistLabel),
+          ),
+        ],
         const Spacer(),
         if (isLoading)
           TextButton.icon(

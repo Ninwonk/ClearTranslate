@@ -63,8 +63,9 @@ ECDICT / CC-CEDICT
 -> Python import scripts
 -> normalized SQLite tables
 -> dictionary_v1.db
+-> dictionary_v1.db.gz
 -> Flutter asset
--> first-run copy
+-> runtime decompression to app support directory
 -> read-only lookup
 ```
 
@@ -88,6 +89,7 @@ Stores:
 - translation style
 - history setting
 - dictionary display settings
+- desktop global shortcuts
 
 ### App Database
 
@@ -109,3 +111,31 @@ Stores:
 
 Dictionary DB should be versioned separately from the app database.
 
+## Desktop Integration
+
+Desktop-only behavior is isolated under `lib/shared/desktop/`.
+
+Responsibilities:
+
+- close-to-tray behavior through `window_manager`
+- system tray/menu-bar icon and quit menu through `tray_manager`
+- global shortcut registration through `hotkey_manager`
+- show/hide and clear-input commands through a small notifier-based command bridge
+
+The desktop shortcut configuration lives in app settings as serialized hotkey JSON. If a configured shortcut is invalid or unavailable, the app should keep starting and skip that registration.
+
+## Phase 4 Long Text Direction
+
+Long text translation should be added as an application-layer path rather than hard-coded into the API client.
+
+Recommended structure:
+
+```text
+LongTextTranslator
+├── TextChunker
+├── ChunkTranslationTask
+├── ChunkProgressState
+└── retry/cancel orchestration
+```
+
+The provider interface should remain focused on translating one request. Long-text orchestration should call the provider repeatedly and own progress, ordering, cancellation, and retry state.

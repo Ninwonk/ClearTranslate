@@ -2,10 +2,11 @@
 
 ## Current MVP Definition
 
-ClearTranslate MVP is split into two practical milestones:
+The initial MVP milestones are complete:
 
 1. AI text translation MVP
 2. local dictionary MVP
+3. AI dictionary enhancement
 
 This avoids blocking usable translation on dictionary data preparation, while keeping the final product direction local-dictionary-first.
 
@@ -36,14 +37,11 @@ Done from Phase 0:
 - MiniMax response cleanup works
 - API Key is not hardcoded
 
-Still needed for Phase 1:
-
-- local history persistence
-- error message mapping
-- desktop shortcut polish
-- UI state polish
+Phase 1 status: completed.
 
 ## Phase 2 MVP: Local Dictionary
+
+Status: completed.
 
 Goal:
 
@@ -51,8 +49,8 @@ Add instant offline lookup for common word and phrase cases.
 
 Required:
 
-- `dictionary_v1.db` asset
-- dictionary asset copy on first launch
+- compressed `dictionary_v1.db.gz` asset
+- dictionary asset decompression into the app support directory
 - English-to-Chinese lookup
 - Chinese-to-English lookup
 - alias-based inflection lookup
@@ -65,6 +63,12 @@ Dictionary source candidates:
 - ECDICT for English-to-Chinese
 - CC-CEDICT for Chinese-to-English
 
+Implemented sources:
+
+- ECDICT
+- CC-CEDICT
+- ClearTranslate seed entries for acceptance fixtures
+
 Dictionary runtime format:
 
 ```text
@@ -72,6 +76,38 @@ SQLite database only
 ```
 
 Do not parse MDict or StarDict at runtime.
+
+## Phase 3 MVP: AI Dictionary Enhancement
+
+Status: completed.
+
+Delivered:
+
+- local dictionary first for words and short phrases
+- AI switch and AI query fallback
+- AI deep explanation for dictionary/no-result states
+- Markdown preview for AI explanation output
+- local history with searchable split detail view
+- Windows/macOS tray integration
+- close-to-tray behavior and tray quit menu
+- customizable global shortcuts
+
+## Phase 4 Next MVP: Long Text Translation
+
+Goal:
+
+Translate long passages without freezing the UI or losing structure.
+
+Required:
+
+- detect long input by configured chunk size
+- split by paragraphs and chunk length
+- translate chunks in order
+- show progress
+- support cancel
+- support retry for failed chunks
+- merge translated chunks into a single output
+- preserve Markdown/list/paragraph structure where possible
 
 ## Home Behavior
 
@@ -165,4 +201,3 @@ English expressions
 - dark mode
 - font size
 - compact mode
-

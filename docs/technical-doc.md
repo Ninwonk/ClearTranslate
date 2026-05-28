@@ -24,6 +24,8 @@ Runtime principles:
 | Dictionary database | prebuilt SQLite asset |
 | Secure storage | flutter_secure_storage |
 | Dictionary build scripts | Python |
+| Desktop window/tray | window_manager / tray_manager |
+| Desktop hotkeys | hotkey_manager |
 
 ## High-Level Architecture
 
@@ -69,8 +71,9 @@ Use this pipeline:
 dictionary source data
 -> offline builder scripts
 -> dictionary_v1.db
+-> dictionary_v1.db.gz
 -> Flutter asset
--> first launch copy to app support directory
+-> runtime decompression to app support directory
 -> Drift / sqlite3 query
 ```
 
@@ -88,14 +91,12 @@ Benefits:
 ```text
 assets/
 └── dictionaries/
-    └── dictionary_v1.db
+    └── dictionary_v1.db.gz
 
 tools/
 └── dictionary_builder/
     ├── README.md
     ├── build_dictionary.py
-    ├── import_ecdict.py
-    ├── import_cc_cedict.py
     ├── normalize.py
     └── schema.sql
 ```
@@ -253,6 +254,54 @@ dictionary_phrases
 
 Prefix suggestions can start with `LIKE :query || '%'` and later be optimized with range queries.
 
+## Desktop Runtime Strategy
+
+Windows and macOS desktop integrations are loaded at startup only on supported desktop platforms.
+
+Runtime responsibilities:
+
+- initialize `window_manager`
+- intercept close events and hide to tray
+- register tray/menu-bar icon
+- expose tray menu items for show and quit
+- register global hotkeys from app settings
+- send UI commands through `DesktopCommands`
+
+Default global shortcuts:
+
+```text
+Windows show/hide: Ctrl + Shift + Space
+macOS show/hide: Cmd + Shift + Space
+Windows clear input: Ctrl + Shift + L
+macOS clear input: Cmd + Shift + L
+```
+
+Hotkey registration failure should be non-fatal because shortcuts may be reserved by the OS or another app.
+
+## Phase 4 Long Text Translation Design
+
+Long text translation should add a separate orchestration layer:
+
+```text
+input text
+-> paragraph split
+-> chunk packing by configured chunk size
+-> sequential translation requests
+-> progress updates
+-> ordered merge
+```
+
+State should track:
+
+- total chunks
+- completed chunks
+- current chunk index
+- per-chunk output
+- failed chunks
+- cancellation flag
+
+Cancellation should stop future chunk requests and cancel the active provider request when possible.
+
 ## Input Classifier
 
 ```dart
@@ -330,4 +379,3 @@ Values:
 mode: dictionary / translation / explanation
 engine: local_dictionary / llm_api
 ```
-

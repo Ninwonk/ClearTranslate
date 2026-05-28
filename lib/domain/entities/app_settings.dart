@@ -9,6 +9,8 @@ class AppSettings {
     required this.themeMode,
     required this.chunkSize,
     required this.providerConfig,
+    this.showWindowHotKey,
+    this.clearInputHotKey,
   });
 
   factory AppSettings.defaults() {
@@ -36,6 +38,8 @@ class AppSettings {
       providerConfig: providerJson is Map<String, Object?>
           ? ProviderConfig.fromJson(providerJson)
           : ProviderConfig.defaults(),
+      showWindowHotKey: _optionalMap(json['showWindowHotKey']),
+      clearInputHotKey: _optionalMap(json['clearInputHotKey']),
     );
   }
 
@@ -46,6 +50,8 @@ class AppSettings {
   final String themeMode;
   final int chunkSize;
   final ProviderConfig providerConfig;
+  final Map<String, Object?>? showWindowHotKey;
+  final Map<String, Object?>? clearInputHotKey;
 
   AppSettings copyWith({
     String? defaultSourceLanguage,
@@ -55,6 +61,8 @@ class AppSettings {
     String? themeMode,
     int? chunkSize,
     ProviderConfig? providerConfig,
+    Map<String, Object?>? showWindowHotKey,
+    Map<String, Object?>? clearInputHotKey,
   }) {
     return AppSettings(
       defaultSourceLanguage:
@@ -66,6 +74,8 @@ class AppSettings {
       themeMode: themeMode ?? this.themeMode,
       chunkSize: chunkSize ?? this.chunkSize,
       providerConfig: providerConfig ?? this.providerConfig,
+      showWindowHotKey: showWindowHotKey ?? this.showWindowHotKey,
+      clearInputHotKey: clearInputHotKey ?? this.clearInputHotKey,
     );
   }
 
@@ -78,6 +88,18 @@ class AppSettings {
       'themeMode': themeMode,
       'chunkSize': chunkSize,
       'providerConfig': providerConfig.toJson(),
+      if (showWindowHotKey != null) 'showWindowHotKey': showWindowHotKey,
+      if (clearInputHotKey != null) 'clearInputHotKey': clearInputHotKey,
     };
+  }
+
+  static Map<String, Object?>? _optionalMap(Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+    return null;
   }
 }
