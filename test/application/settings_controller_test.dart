@@ -15,6 +15,8 @@ void main() {
       translationStyle: 'formal',
       saveHistoryEnabled: false,
       chunkSize: 2000,
+      showWindowHotKey: const {'test': 'show'},
+      clearInputHotKey: const {'test': 'clear'},
     );
 
     expect(
@@ -23,6 +25,8 @@ void main() {
     expect(repository.settings.translationStyle, 'formal');
     expect(repository.settings.saveHistoryEnabled, isFalse);
     expect(repository.settings.chunkSize, 2000);
+    expect(repository.settings.showWindowHotKey, {'test': 'show'});
+    expect(repository.settings.clearInputHotKey, {'test': 'clear'});
     expect(repository.apiKey, 'secret-key');
     expect(controller.state.successMessage, '设置已保存');
   });

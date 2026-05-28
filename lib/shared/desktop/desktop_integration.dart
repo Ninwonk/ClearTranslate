@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../domain/entities/app_settings.dart';
 import 'desktop_commands.dart';
+import 'desktop_hotkeys.dart';
 
 class DesktopIntegration with WindowListener, TrayListener {
   DesktopIntegration._();
@@ -15,10 +16,11 @@ class DesktopIntegration with WindowListener, TrayListener {
 
   bool _isInitialized = false;
   bool _isQuitting = false;
+  DateTime? _lastTrayMenuPopupAt;
 
   bool get isSupported => !kIsWeb && (Platform.isWindows || Platform.isMacOS);
 
-  Future<void> initialize() async {
+  Future<void> initialize(AppSettings settings) async {
     if (_isInitialized || !isSupported) {
       return;
     }
@@ -30,7 +32,7 @@ class DesktopIntegration with WindowListener, TrayListener {
     trayManager.addListener(this);
 
     await _setupTray();
-    await _setupHotKeys();
+    await configureHotKeys(settings);
 
     _isInitialized = true;
   }
@@ -52,27 +54,19 @@ class DesktopIntegration with WindowListener, TrayListener {
     );
   }
 
-  Future<void> _setupHotKeys() async {
+  Future<void> configureHotKeys(AppSettings settings) async {
+    if (!isSupported) {
+      return;
+    }
     await hotKeyManager.unregisterAll();
 
-    final primaryModifier =
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control;
-
     await _tryRegisterHotKey(
-      HotKey(
-        key: PhysicalKeyboardKey.space,
-        modifiers: [primaryModifier, HotKeyModifier.shift],
-        scope: HotKeyScope.system,
-      ),
+      DesktopHotKeys.showWindow(settings),
       (_) => showTranslateWindow(),
     );
 
     await _tryRegisterHotKey(
-      HotKey(
-        key: PhysicalKeyboardKey.keyL,
-        modifiers: [primaryModifier, HotKeyModifier.shift],
-        scope: HotKeyScope.system,
-      ),
+      DesktopHotKeys.clearInput(settings),
       (_) => DesktopCommands.instance.requestClearInput(),
     );
   }
@@ -120,6 +114,16 @@ class DesktopIntegration with WindowListener, TrayListener {
   }
 
   @override
+  void onTrayIconRightMouseDown() {
+    _showTrayMenu();
+  }
+
+  @override
+  void onTrayIconRightMouseUp() {
+    _showTrayMenu();
+  }
+
+  @override
   Future<void> onTrayMenuItemClick(MenuItem menuItem) async {
     switch (menuItem.key) {
       case 'show':
@@ -127,5 +131,15 @@ class DesktopIntegration with WindowListener, TrayListener {
       case 'quit':
         await quit();
     }
+  }
+
+  void _showTrayMenu() {
+    final now = DateTime.now();
+    final last = _lastTrayMenuPopupAt;
+    if (last != null && now.difference(last).inMilliseconds < 500) {
+      return;
+    }
+    _lastTrayMenuPopupAt = now;
+    trayManager.popUpContextMenu();
   }
 }
