@@ -10,6 +10,10 @@ class TranslationPrompts {
       return dictionaryExplanation(request.sourceText);
     }
 
+    if (request.isChunked) {
+      return longTextChunk(request);
+    }
+
     return [
       {
         'role': 'system',
@@ -28,8 +32,37 @@ class TranslationPrompts {
 5. 如果原文有明显错别字，可在不改变意思的前提下自然修正。
 6. 翻译风格：${request.style}
 7. 不要输出思考过程、分析说明或 <think> 标签。
+${_glossaryBlock(request.glossary)}
 
 用户输入：
+${request.sourceText}
+''',
+      },
+    ];
+  }
+
+  static List<Map<String, String>> longTextChunk(TranslationRequest request) {
+    return [
+      {
+        'role': 'system',
+        'content': '你是一个专业中英长文本翻译引擎。只输出当前分段译文，不要解释，不要总结，不要输出思考过程。',
+      },
+      {
+        'role': 'user',
+        'content': '''
+你正在翻译一篇长文的第 ${request.currentChunk} / ${request.totalChunks} 段。
+请将以下内容翻译为${_languageName(request.targetLanguage)}。
+
+要求：
+1. 保留段落、标题、列表、编号、代码块和 Markdown 格式。
+2. 不要总结，不要省略，不要合并无关段落。
+3. 只输出当前分段译文。
+4. 翻译自然、准确、符合目标语言表达习惯。
+5. 翻译风格：${request.style}
+6. 不要输出思考过程、分析说明或 <think> 标签。
+${_glossaryBlock(request.glossary)}
+
+当前分段：
 ${request.sourceText}
 ''',
       },
@@ -67,5 +100,18 @@ $content
       TranslationLanguage.zh => '中文',
       TranslationLanguage.en => 'English',
     };
+  }
+
+  static String _glossaryBlock(String glossary) {
+    final trimmed = glossary.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+    return '''
+
+术语参考：
+$trimmed
+
+请尽量保持这些术语、专名和表达方式一致。''';
   }
 }

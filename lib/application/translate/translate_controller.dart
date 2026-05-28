@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../application/history/history_controller.dart';
 import '../../application/settings/settings_controller.dart';
+import '../../domain/entities/app_settings.dart';
 import '../../domain/entities/dictionary_entry.dart';
 import '../../domain/entities/history_record.dart';
 import '../../domain/entities/provider_config.dart';
@@ -19,6 +20,7 @@ import '../../infrastructure/api/openai_compatible_translation_provider.dart';
 import '../../infrastructure/dictionary/sqlite_dictionary_repository.dart';
 import '../../shared/errors/translation_error_mapper.dart';
 import '../../shared/input/input_classifier.dart';
+import 'text_chunker.dart';
 
 typedef TranslationProviderFactory = TranslationProvider Function(
   ProviderConfig config,
@@ -71,6 +73,11 @@ class TranslateController extends StateNotifier<TranslateState> {
   final TranslationProviderFactory _providerFactory;
   final Future<void> Function()? _onHistoryChanged;
   TranslationProvider? _activeProvider;
+  List<String> _lastLongTextChunks = const [];
+  List<String?> _lastLongTextOutputs = const [];
+  String? _lastLongTextInput;
+  TranslationLanguage? _lastLongTextSourceLanguage;
+  TranslationLanguage? _lastLongTextTargetLanguage;
 
   Future<void> translate(String input) async {
     final text = input.trim();
@@ -179,6 +186,12 @@ class TranslateController extends StateNotifier<TranslateState> {
       targetLanguage: targetLanguage,
       currentMode: InputMode.aiTranslation,
       canUseAIExplanation: false,
+      isLongText: false,
+      totalChunks: 0,
+      completedChunks: 0,
+      currentChunk: 0,
+      failedChunkIndexes: const [],
+      isCancelled: false,
     );
 
     try {
@@ -198,18 +211,33 @@ class TranslateController extends StateNotifier<TranslateState> {
       final provider = _providerFactory(config, apiKey);
       _activeProvider = provider;
 
+      final chunks = TextChunker.split(text, settings.chunkSize);
+      if (chunks.length > 1) {
+        await _translateLongText(
+          text: text,
+          chunks: chunks,
+          sourceLanguage: sourceLanguage,
+          targetLanguage: targetLanguage,
+          provider: provider,
+          settings: settings,
+        );
+        return;
+      }
+
       final result = await provider.translate(
         TranslationRequest(
           sourceText: text,
           sourceLanguage: sourceLanguage,
           targetLanguage: targetLanguage,
           style: settings.translationStyle,
+          glossary: settings.glossary,
         ),
       );
 
       state = state.copyWith(
         isLoading: false,
         outputText: result.translatedText,
+        isLongText: false,
       );
 
       if (settings.saveHistoryEnabled) {
@@ -226,11 +254,111 @@ class TranslateController extends StateNotifier<TranslateState> {
 
   void cancel() {
     _activeProvider?.cancel('active');
-    state = state.copyWith(isLoading: false, errorMessage: '已取消翻译');
+    state = state.copyWith(
+      isLoading: false,
+      isCancelled: true,
+      errorMessage: '已取消翻译',
+    );
   }
 
   void clear() {
     state = const TranslateState();
+    _lastLongTextChunks = const [];
+    _lastLongTextOutputs = const [];
+    _lastLongTextInput = null;
+    _lastLongTextSourceLanguage = null;
+    _lastLongTextTargetLanguage = null;
+  }
+
+  Future<void> retryFailedChunks() async {
+    final failedIndexes = state.failedChunkIndexes;
+    if (failedIndexes.isEmpty ||
+        _lastLongTextInput == null ||
+        _lastLongTextChunks.isEmpty ||
+        _lastLongTextOutputs.length != _lastLongTextChunks.length ||
+        _lastLongTextSourceLanguage == null ||
+        _lastLongTextTargetLanguage == null) {
+      state = state.copyWith(errorMessage: '没有可重试的失败分段');
+      return;
+    }
+
+    try {
+      final settings = await _settingsRepository.load();
+      final config = settings.providerConfig;
+      final apiKey =
+          await _settingsRepository.readApiKey(config.apiKeyStorageKey);
+
+      if (apiKey == null || apiKey.trim().isEmpty) {
+        state = state.copyWith(errorMessage: '请先在设置中填写 API Key');
+        return;
+      }
+
+      final provider = _providerFactory(config, apiKey);
+      _activeProvider = provider;
+      final outputs = List<String?>.from(_lastLongTextOutputs);
+      final remainingFailures = <int>[];
+
+      state = state.copyWith(
+        isLoading: true,
+        isCancelled: false,
+        errorMessage: null,
+      );
+
+      for (final index in failedIndexes) {
+        if (state.isCancelled) {
+          break;
+        }
+
+        state = state.copyWith(currentChunk: index + 1);
+        try {
+          final result = await provider.translate(
+            TranslationRequest(
+              sourceText: _lastLongTextChunks[index],
+              sourceLanguage: _lastLongTextSourceLanguage!,
+              targetLanguage: _lastLongTextTargetLanguage!,
+              style: settings.translationStyle,
+              glossary: settings.glossary,
+              currentChunk: index + 1,
+              totalChunks: _lastLongTextChunks.length,
+            ),
+          );
+          outputs[index] = result.translatedText;
+          _lastLongTextOutputs = outputs;
+          state = state.copyWith(
+            outputText: _mergeChunkOutputs(outputs),
+            completedChunks: outputs.whereType<String>().length,
+          );
+        } on Object {
+          remainingFailures.add(index);
+        }
+      }
+
+      final outputText = _mergeChunkOutputs(outputs);
+      state = state.copyWith(
+        isLoading: false,
+        outputText: outputText,
+        completedChunks: outputs.whereType<String>().length,
+        failedChunkIndexes: remainingFailures,
+        errorMessage: remainingFailures.isEmpty ? null : '仍有分段翻译失败，可再次重试。',
+      );
+
+      if (remainingFailures.isEmpty && settings.saveHistoryEnabled) {
+        await _saveLongTextHistory(
+          inputText: _lastLongTextInput!,
+          outputText: outputText,
+          sourceLanguage: _lastLongTextSourceLanguage!,
+          targetLanguage: _lastLongTextTargetLanguage!,
+          providerName: settings.providerConfig.providerName,
+          modelName: settings.providerConfig.modelName,
+        );
+        await _onHistoryChanged?.call();
+      }
+    } on Object catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: TranslationErrorMapper.message(error),
+      );
+    }
   }
 
   Future<void> _explainDictionaryWithAI(
@@ -315,6 +443,119 @@ class TranslateController extends StateNotifier<TranslateState> {
         targetLanguage: result.targetLanguage,
         provider: result.provider,
         model: result.model,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _translateLongText({
+    required String text,
+    required List<String> chunks,
+    required TranslationLanguage sourceLanguage,
+    required TranslationLanguage targetLanguage,
+    required TranslationProvider provider,
+    required AppSettings settings,
+  }) async {
+    final outputs = List<String?>.filled(chunks.length, null);
+    final failedIndexes = <int>[];
+    _lastLongTextChunks = chunks;
+    _lastLongTextOutputs = outputs;
+    _lastLongTextInput = text;
+    _lastLongTextSourceLanguage = sourceLanguage;
+    _lastLongTextTargetLanguage = targetLanguage;
+
+    state = state.copyWith(
+      isLoading: true,
+      isCancelled: false,
+      isLongText: true,
+      totalChunks: chunks.length,
+      completedChunks: 0,
+      currentChunk: 1,
+      failedChunkIndexes: const [],
+      outputText: '',
+    );
+
+    for (var index = 0; index < chunks.length; index++) {
+      if (state.isCancelled) {
+        return;
+      }
+
+      state = state.copyWith(currentChunk: index + 1);
+      try {
+        final result = await provider.translate(
+          TranslationRequest(
+            sourceText: chunks[index],
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            style: settings.translationStyle,
+            glossary: settings.glossary,
+            currentChunk: index + 1,
+            totalChunks: chunks.length,
+          ),
+        );
+        outputs[index] = result.translatedText;
+        _lastLongTextOutputs = outputs;
+        state = state.copyWith(
+          outputText: _mergeChunkOutputs(outputs),
+          completedChunks: outputs.whereType<String>().length,
+        );
+      } on Object {
+        failedIndexes.add(index);
+        outputs[index] = null;
+      }
+    }
+
+    final outputText = _mergeChunkOutputs(outputs);
+    state = state.copyWith(
+      isLoading: false,
+      outputText: outputText,
+      completedChunks: outputs.whereType<String>().length,
+      failedChunkIndexes: failedIndexes,
+      errorMessage: failedIndexes.isEmpty
+          ? null
+          : '有 ${failedIndexes.length} 个分段翻译失败，可点击重试。',
+    );
+
+    if (failedIndexes.isEmpty && settings.saveHistoryEnabled) {
+      await _saveLongTextHistory(
+        inputText: text,
+        outputText: outputText,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+        providerName: settings.providerConfig.providerName,
+        modelName: settings.providerConfig.modelName,
+      );
+      await _onHistoryChanged?.call();
+    }
+  }
+
+  String _mergeChunkOutputs(List<String?> outputs) {
+    return outputs
+        .whereType<String>()
+        .map((output) => output.trim())
+        .where((output) => output.isNotEmpty)
+        .join('\n\n');
+  }
+
+  Future<void> _saveLongTextHistory({
+    required String inputText,
+    required String outputText,
+    required TranslationLanguage sourceLanguage,
+    required TranslationLanguage targetLanguage,
+    required String providerName,
+    required String modelName,
+  }) async {
+    await _historyRepository.add(
+      HistoryRecord(
+        id: const Uuid().v4(),
+        inputText: inputText,
+        outputText: outputText,
+        mode: TranslationMode.translate,
+        engine: 'llm_api',
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+        provider: providerName,
+        model: modelName,
         createdAt: DateTime.now(),
       ),
     );
@@ -437,6 +678,12 @@ class TranslateState {
     this.currentMode = InputMode.aiTranslation,
     this.aiEnabled = true,
     this.canUseAIExplanation = false,
+    this.isLongText = false,
+    this.totalChunks = 0,
+    this.completedChunks = 0,
+    this.currentChunk = 0,
+    this.failedChunkIndexes = const [],
+    this.isCancelled = false,
     this.lastDictionaryInput,
     this.errorMessage,
   });
@@ -448,6 +695,12 @@ class TranslateState {
   final InputMode currentMode;
   final bool aiEnabled;
   final bool canUseAIExplanation;
+  final bool isLongText;
+  final int totalChunks;
+  final int completedChunks;
+  final int currentChunk;
+  final List<int> failedChunkIndexes;
+  final bool isCancelled;
   final String? lastDictionaryInput;
   final String? errorMessage;
 
@@ -477,6 +730,31 @@ class TranslateState {
     return 'AI 深度解释';
   }
 
+  bool get canRetryFailedChunks => failedChunkIndexes.isNotEmpty && !isLoading;
+
+  double get progressValue {
+    if (!isLongText || totalChunks == 0) {
+      return 0;
+    }
+    return completedChunks / totalChunks;
+  }
+
+  String get progressLabel {
+    if (!isLongText || totalChunks == 0) {
+      return '';
+    }
+    if (failedChunkIndexes.isNotEmpty) {
+      return '已完成 $completedChunks / $totalChunks，失败 ${failedChunkIndexes.length} 段';
+    }
+    if (isLoading) {
+      return '正在翻译第 $currentChunk / $totalChunks 段';
+    }
+    if (isCancelled) {
+      return '已取消，完成 $completedChunks / $totalChunks 段';
+    }
+    return '已完成 $completedChunks / $totalChunks 段';
+  }
+
   TranslateState copyWith({
     TranslationLanguage? sourceLanguage,
     TranslationLanguage? targetLanguage,
@@ -485,6 +763,12 @@ class TranslateState {
     InputMode? currentMode,
     bool? aiEnabled,
     bool? canUseAIExplanation,
+    bool? isLongText,
+    int? totalChunks,
+    int? completedChunks,
+    int? currentChunk,
+    List<int>? failedChunkIndexes,
+    bool? isCancelled,
     Object? lastDictionaryInput = _sentinel,
     Object? errorMessage = _sentinel,
   }) {
@@ -496,6 +780,12 @@ class TranslateState {
       currentMode: currentMode ?? this.currentMode,
       aiEnabled: aiEnabled ?? this.aiEnabled,
       canUseAIExplanation: canUseAIExplanation ?? this.canUseAIExplanation,
+      isLongText: isLongText ?? this.isLongText,
+      totalChunks: totalChunks ?? this.totalChunks,
+      completedChunks: completedChunks ?? this.completedChunks,
+      currentChunk: currentChunk ?? this.currentChunk,
+      failedChunkIndexes: failedChunkIndexes ?? this.failedChunkIndexes,
+      isCancelled: isCancelled ?? this.isCancelled,
       lastDictionaryInput: identical(lastDictionaryInput, _sentinel)
           ? this.lastDictionaryInput
           : lastDictionaryInput as String?,

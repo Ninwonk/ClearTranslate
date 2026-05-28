@@ -164,7 +164,7 @@ Delivered:
 
 ## Phase 4: Long Text Translation
 
-Status: next.
+Status: completed.
 
 Goal:
 
@@ -197,7 +197,20 @@ Acceptance:
 - chunks merge in order
 - Markdown structure is mostly preserved
 
+Delivered:
+
+- long input detection based on the configured chunk size
+- paragraph-first chunking with long-paragraph fallback splitting
+- sequential per-chunk translation with ordered merge
+- visible progress text and progress bar on the home page
+- cancel action for active long-text translation
+- failed chunk retry action
+- translation style and terminology hints passed into chunk prompts
+- Markdown-oriented prompt requirements for structure preservation
+
 ## Phase 5: Mobile Adaptation
+
+Status: next.
 
 Goal:
 

@@ -280,6 +280,8 @@ Hotkey registration failure should be non-fatal because shortcuts may be reserve
 
 ## Phase 4 Long Text Translation Design
 
+Status: completed.
+
 Long text translation should add a separate orchestration layer:
 
 ```text
@@ -301,6 +303,13 @@ State should track:
 - cancellation flag
 
 Cancellation should stop future chunk requests and cancel the active provider request when possible.
+
+Current implementation:
+
+- `TextChunker` splits input by paragraphs first, then falls back to punctuation-aware splitting for oversized paragraphs.
+- `TranslateController` owns chunk progress, cancellation, failed chunk indexes, retry, and ordered output merge.
+- `TranslationRequest` carries `currentChunk`, `totalChunks`, and optional glossary text into the prompt layer.
+- Settings persist chunk size, translation style, and glossary/terminology hints.
 
 ## Input Classifier
 

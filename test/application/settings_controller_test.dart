@@ -15,6 +15,7 @@ void main() {
       translationStyle: 'formal',
       saveHistoryEnabled: false,
       chunkSize: 2000,
+      glossary: 'ClearTranslate = ClearTranslate',
       showWindowHotKey: const {'test': 'show'},
       clearInputHotKey: const {'test': 'clear'},
     );
@@ -25,6 +26,7 @@ void main() {
     expect(repository.settings.translationStyle, 'formal');
     expect(repository.settings.saveHistoryEnabled, isFalse);
     expect(repository.settings.chunkSize, 2000);
+    expect(repository.settings.glossary, 'ClearTranslate = ClearTranslate');
     expect(repository.settings.showWindowHotKey, {'test': 'show'});
     expect(repository.settings.clearInputHotKey, {'test': 'clear'});
     expect(repository.apiKey, 'secret-key');

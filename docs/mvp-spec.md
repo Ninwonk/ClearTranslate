@@ -92,7 +92,9 @@ Delivered:
 - close-to-tray behavior and tray quit menu
 - customizable global shortcuts
 
-## Phase 4 Next MVP: Long Text Translation
+## Phase 4 MVP: Long Text Translation
+
+Status: completed.
 
 Goal:
 
@@ -108,6 +110,16 @@ Required:
 - support retry for failed chunks
 - merge translated chunks into a single output
 - preserve Markdown/list/paragraph structure where possible
+
+Delivered:
+
+- configured chunk-size detection
+- paragraph-first chunk packing
+- in-order chunk translation and merged output
+- progress display
+- cancel support
+- retry failed chunks
+- glossary/terminology hints for long-text prompts
 
 ## Home Behavior
 

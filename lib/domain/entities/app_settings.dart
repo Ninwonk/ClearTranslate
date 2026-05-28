@@ -8,6 +8,7 @@ class AppSettings {
     required this.saveHistoryEnabled,
     required this.themeMode,
     required this.chunkSize,
+    required this.glossary,
     required this.providerConfig,
     this.showWindowHotKey,
     this.clearInputHotKey,
@@ -21,6 +22,7 @@ class AppSettings {
       saveHistoryEnabled: true,
       themeMode: 'system',
       chunkSize: 3000,
+      glossary: '',
       providerConfig: ProviderConfig.defaults(),
     );
   }
@@ -35,6 +37,7 @@ class AppSettings {
       saveHistoryEnabled: json['saveHistoryEnabled'] as bool? ?? true,
       themeMode: json['themeMode'] as String? ?? 'system',
       chunkSize: json['chunkSize'] as int? ?? 3000,
+      glossary: json['glossary'] as String? ?? '',
       providerConfig: providerJson is Map<String, Object?>
           ? ProviderConfig.fromJson(providerJson)
           : ProviderConfig.defaults(),
@@ -49,6 +52,7 @@ class AppSettings {
   final bool saveHistoryEnabled;
   final String themeMode;
   final int chunkSize;
+  final String glossary;
   final ProviderConfig providerConfig;
   final Map<String, Object?>? showWindowHotKey;
   final Map<String, Object?>? clearInputHotKey;
@@ -60,6 +64,7 @@ class AppSettings {
     bool? saveHistoryEnabled,
     String? themeMode,
     int? chunkSize,
+    String? glossary,
     ProviderConfig? providerConfig,
     Map<String, Object?>? showWindowHotKey,
     Map<String, Object?>? clearInputHotKey,
@@ -73,6 +78,7 @@ class AppSettings {
       saveHistoryEnabled: saveHistoryEnabled ?? this.saveHistoryEnabled,
       themeMode: themeMode ?? this.themeMode,
       chunkSize: chunkSize ?? this.chunkSize,
+      glossary: glossary ?? this.glossary,
       providerConfig: providerConfig ?? this.providerConfig,
       showWindowHotKey: showWindowHotKey ?? this.showWindowHotKey,
       clearInputHotKey: clearInputHotKey ?? this.clearInputHotKey,
@@ -87,6 +93,7 @@ class AppSettings {
       'saveHistoryEnabled': saveHistoryEnabled,
       'themeMode': themeMode,
       'chunkSize': chunkSize,
+      'glossary': glossary,
       'providerConfig': providerConfig.toJson(),
       if (showWindowHotKey != null) 'showWindowHotKey': showWindowHotKey,
       if (clearInputHotKey != null) 'clearInputHotKey': clearInputHotKey,
