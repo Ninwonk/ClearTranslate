@@ -431,54 +431,60 @@ class _HistoryDetailPane extends StatelessWidget {
         border: Border.all(color: theme.dividerColor),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: record == null
-            ? const Center(child: Text('选择一条历史记录查看详情'))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${record!.sourceLanguage.label} -> ${record!.targetLanguage.label}',
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _modeLabel(record!.mode.name),
-                        style: theme.textTheme.labelMedium,
-                      ),
-                      const Spacer(),
-                      Text(
-                        _formatHistoryTime(record!.createdAt),
-                        style: theme.textTheme.labelMedium,
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        tooltip: '复制结果',
-                        onPressed: () => onCopy(record!.outputText),
-                        icon: const Icon(Icons.content_copy),
-                      ),
-                      IconButton(
-                        tooltip: '删除',
-                        onPressed: () => onDelete(record!.id),
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text('输入', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 6),
-                  SelectableText(record!.inputText),
-                  const Divider(height: 28),
-                  Text('结果', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Markdown(
+      child: record == null
+          ? const Center(child: Text('选择一条历史记录查看详情'))
+          : Scrollbar(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                '${record!.sourceLanguage.label} -> ${record!.targetLanguage.label}',
+                                style: theme.textTheme.titleSmall,
+                              ),
+                              Text(
+                                _modeLabel(record!.mode.name),
+                                style: theme.textTheme.labelMedium,
+                              ),
+                              Text(
+                                _formatHistoryTime(record!.createdAt),
+                                style: theme.textTheme.labelMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: '复制结果',
+                          onPressed: () => onCopy(record!.outputText),
+                          icon: const Icon(Icons.content_copy),
+                        ),
+                        IconButton(
+                          tooltip: '删除',
+                          onPressed: () => onDelete(record!.id),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text('输入', style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 6),
+                    SelectableText(record!.inputText),
+                    const Divider(height: 28),
+                    Text('结果', style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    MarkdownBody(
                       data: record!.outputText,
                       selectable: true,
-                      padding: EdgeInsets.zero,
                       styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
                         h1: theme.textTheme.titleLarge,
                         h2: theme.textTheme.titleMedium,
@@ -495,20 +501,20 @@ class _HistoryDetailPane extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                  if (record!.model != null || record!.provider != null) ...[
-                    const Divider(height: 24),
-                    Text(
-                      [
-                        if (record!.provider != null) record!.provider!,
-                        if (record!.model != null) record!.model!,
-                      ].join(' / '),
-                      style: theme.textTheme.labelSmall,
-                    ),
+                    if (record!.model != null || record!.provider != null) ...[
+                      const Divider(height: 24),
+                      Text(
+                        [
+                          if (record!.provider != null) record!.provider!,
+                          if (record!.model != null) record!.model!,
+                        ].join(' / '),
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-      ),
+            ),
     );
   }
 
