@@ -198,4 +198,107 @@ void main() {
     expect(controller.state.outputText, contains('请开启 AI 翻译'));
     expect(historyRepository.records, isEmpty);
   });
+
+  test('translates long text in chunks and stores merged history', () async {
+    final repository = FakeSettingsRepository(
+      initialSettings: AppSettings.defaults().copyWith(chunkSize: 220),
+      initialApiKey: 'secret-key',
+    );
+    final historyRepository = FakeHistoryRepository();
+    final fakeProvider = FakeTranslationProvider(
+      'unused',
+      outputs: ['第一段译文', '第二段译文', '第三段译文', '第四段译文', '第五段译文'],
+    );
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      FakeDictionaryRepository(),
+      (config, apiKey) => fakeProvider,
+    );
+    final input = '${'hello world. ' * 25}\n\n${'another paragraph. ' * 25}';
+
+    await controller.translate(input);
+
+    expect(fakeProvider.requests.length, greaterThan(1));
+    expect(fakeProvider.requests.first.currentChunk, 1);
+    expect(
+        fakeProvider.requests.first.totalChunks, fakeProvider.requests.length);
+    expect(controller.state.isLongText, isTrue);
+    expect(controller.state.completedChunks, fakeProvider.requests.length);
+    expect(controller.state.outputText, contains('第一段译文'));
+    expect(controller.state.outputText, contains('第二段译文'));
+    expect(historyRepository.records.single.outputText,
+        controller.state.outputText);
+  });
+
+  test('keeps failed chunks retryable and retries them', () async {
+    final repository = FakeSettingsRepository(
+      initialSettings: AppSettings.defaults().copyWith(chunkSize: 220),
+      initialApiKey: 'secret-key',
+    );
+    final historyRepository = FakeHistoryRepository();
+    var providerIndex = 0;
+    final providers = [
+      FakeTranslationProvider(
+        'unused',
+        outputs: ['第一段译文', 'unused', '第三段译文', '第四段译文', '第五段译文'],
+        failAtCalls: {2},
+      ),
+      FakeTranslationProvider('unused', outputs: ['第二段译文']),
+    ];
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      FakeDictionaryRepository(),
+      (config, apiKey) => providers[providerIndex++],
+    );
+    final input = '${'hello world. ' * 25}\n\n${'another paragraph. ' * 25}';
+
+    await controller.translate(input);
+
+    expect(controller.state.failedChunkIndexes, [1]);
+    expect(controller.state.canRetryFailedChunks, isTrue);
+    expect(historyRepository.records, isEmpty);
+
+    await controller.retryFailedChunks();
+
+    expect(controller.state.failedChunkIndexes, isEmpty);
+    expect(controller.state.outputText, contains('第一段译文'));
+    expect(controller.state.outputText, contains('第二段译文'));
+    expect(controller.state.outputText, contains('第三段译文'));
+    expect(historyRepository.records.single.outputText,
+        controller.state.outputText);
+  });
+
+  test('cancels long text translation without writing history', () async {
+    final repository = FakeSettingsRepository(
+      initialSettings: AppSettings.defaults().copyWith(chunkSize: 220),
+      initialApiKey: 'secret-key',
+    );
+    final historyRepository = FakeHistoryRepository();
+    late TranslateController controller;
+    final fakeProvider = FakeTranslationProvider(
+      '译文',
+      onTranslate: (callCount) async {
+        if (callCount == 1) {
+          controller.cancel();
+        }
+      },
+    );
+    controller = TranslateController(
+      repository,
+      historyRepository,
+      FakeDictionaryRepository(),
+      (config, apiKey) => fakeProvider,
+    );
+    final input = '${'hello world. ' * 25}\n\n${'another paragraph. ' * 25}';
+
+    await controller.translate(input);
+
+    expect(fakeProvider.wasCancelled, isTrue);
+    expect(controller.state.isCancelled, isTrue);
+    expect(controller.state.isLoading, isFalse);
+    expect(controller.state.completedChunks, 1);
+    expect(historyRepository.records, isEmpty);
+  });
 }

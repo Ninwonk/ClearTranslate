@@ -175,13 +175,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                     isLoading: state.isLoading,
                     hasOutput: state.outputText.isNotEmpty,
                     canUseAIExplanation: state.canUseAIExplanation,
+                    canRetryFailedChunks: state.canRetryFailedChunks,
                     aiAssistLabel: state.aiAssistLabel,
                     onTranslate: () => _translate(controller),
                     onExplain: controller.explainWithAI,
+                    onRetryFailedChunks: controller.retryFailedChunks,
                     onClear: () => _clear(controller),
                     onCancel: controller.cancel,
                     onCopy: () => _copyResult(context, state.outputText),
                   ),
+                  if (state.isLongText) ...[
+                    const SizedBox(height: 8),
+                    _LongTextProgress(state: state),
+                  ],
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -230,6 +236,30 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('已复制译文')),
+    );
+  }
+}
+
+class _LongTextProgress extends StatelessWidget {
+  const _LongTextProgress({required this.state});
+
+  final TranslateState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: state.totalChunks == 0 ? null : state.progressValue,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          state.progressLabel,
+          style: theme.textTheme.labelMedium,
+        ),
+      ],
     );
   }
 }
@@ -352,9 +382,11 @@ class _ActionBar extends StatelessWidget {
     required this.isLoading,
     required this.hasOutput,
     required this.canUseAIExplanation,
+    required this.canRetryFailedChunks,
     required this.aiAssistLabel,
     required this.onTranslate,
     required this.onExplain,
+    required this.onRetryFailedChunks,
     required this.onClear,
     required this.onCancel,
     required this.onCopy,
@@ -364,9 +396,11 @@ class _ActionBar extends StatelessWidget {
   final bool isLoading;
   final bool hasOutput;
   final bool canUseAIExplanation;
+  final bool canRetryFailedChunks;
   final String aiAssistLabel;
   final VoidCallback onTranslate;
   final VoidCallback onExplain;
+  final VoidCallback onRetryFailedChunks;
   final VoidCallback onClear;
   final VoidCallback onCancel;
   final VoidCallback onCopy;
@@ -398,6 +432,14 @@ class _ActionBar extends StatelessWidget {
             onPressed: isLoading ? null : onExplain,
             icon: const Icon(Icons.auto_awesome),
             label: Text(aiAssistLabel),
+          ),
+        ],
+        if (canRetryFailedChunks) ...[
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onRetryFailedChunks,
+            icon: const Icon(Icons.refresh),
+            label: const Text('重试失败分段'),
           ),
         ],
         const Spacer(),
