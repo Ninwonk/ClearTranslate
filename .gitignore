@@ -13,6 +13,7 @@ coverage/
 flutter_*.png
 flutter_*.log
 assets/dictionaries/*.db
+**/xcshareddata/swiftpm/
 
 # IDE
 .idea/

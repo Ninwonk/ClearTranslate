@@ -43,163 +43,176 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final controller = ref.read(settingsControllerProvider.notifier);
     _bindStateOnce(state);
 
+    final showDesktopSettings = DesktopIntegration.instance.isSupported;
+
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const _SettingsSectionTitle('API 设置'),
-          TextField(
-            controller: _baseUrlController,
-            decoration: const InputDecoration(
-              labelText: 'API Base URL',
-              hintText: 'https://api.openai.com/v1',
-              prefixIcon: Icon(Icons.link),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const _SettingsSectionTitle('API 设置'),
+                TextField(
+                  controller: _baseUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'API Base URL',
+                    hintText: 'https://api.openai.com/v1',
+                    prefixIcon: Icon(Icons.link),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _apiKeyController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'API Key',
+                    prefixIcon: Icon(Icons.key),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _modelController,
+                  decoration: const InputDecoration(
+                    labelText: '模型名称',
+                    hintText: 'gpt-4o-mini',
+                    prefixIcon: Icon(Icons.memory),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const _SettingsSectionTitle('翻译偏好'),
+                DropdownButtonFormField<String>(
+                  initialValue: _translationStyle,
+                  decoration: const InputDecoration(
+                    labelText: '翻译风格',
+                    prefixIcon: Icon(Icons.tune),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'natural', child: Text('自然')),
+                    DropdownMenuItem(value: 'accurate', child: Text('准确')),
+                    DropdownMenuItem(value: 'formal', child: Text('正式')),
+                    DropdownMenuItem(value: 'concise', child: Text('简洁')),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() => _translationStyle = value);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _chunkSizeController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: '长文本分段长度',
+                    prefixIcon: Icon(Icons.segment),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _glossaryController,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    labelText: '术语表 / 长文本术语提示',
+                    hintText:
+                        'ClearTranslate = ClearTranslate\nlocal dictionary = 本地词典',
+                    prefixIcon: Icon(Icons.article_outlined),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _saveHistoryEnabled,
+                  title: const Text('保存历史记录'),
+                  secondary: const Icon(Icons.history),
+                  onChanged: (value) {
+                    setState(() => _saveHistoryEnabled = value);
+                  },
+                ),
+                if (showDesktopSettings) ...[
+                  const SizedBox(height: 24),
+                  const _SettingsSectionTitle('桌面快捷键'),
+                  _HotKeySettingTile(
+                    title: '唤出翻译界面',
+                    hotKey: _showWindowHotKey,
+                    onRecord: () async {
+                      final hotKey = await _recordHotKey(
+                        context,
+                        title: '录制唤出翻译界面快捷键',
+                        initialHotKey: _showWindowHotKey,
+                      );
+                      if (hotKey != null) {
+                        setState(() => _showWindowHotKey = hotKey);
+                      }
+                    },
+                    onReset: () {
+                      setState(() => _showWindowHotKey =
+                          DesktopHotKeys.defaultShowWindow());
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _HotKeySettingTile(
+                    title: '清空输入区',
+                    hotKey: _clearInputHotKey,
+                    onRecord: () async {
+                      final hotKey = await _recordHotKey(
+                        context,
+                        title: '录制清空输入区快捷键',
+                        initialHotKey: _clearInputHotKey,
+                      );
+                      if (hotKey != null) {
+                        setState(() => _clearInputHotKey = hotKey);
+                      }
+                    },
+                    onReset: () {
+                      setState(() => _clearInputHotKey =
+                          DesktopHotKeys.defaultClearInput());
+                    },
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: state.isSaving
+                      ? null
+                      : () => _saveSettings(context, controller),
+                  icon: state.isSaving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: const Text('保存设置'),
+                ),
+                if (state.isLoading) ...[
+                  const SizedBox(height: 16),
+                  const LinearProgressIndicator(),
+                ],
+                if (state.errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    state.errorMessage!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                if (state.successMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    state.successMessage!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.primary),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _apiKeyController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'API Key',
-              prefixIcon: Icon(Icons.key),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _modelController,
-            decoration: const InputDecoration(
-              labelText: '模型名称',
-              hintText: 'gpt-4o-mini',
-              prefixIcon: Icon(Icons.memory),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const _SettingsSectionTitle('翻译偏好'),
-          DropdownButtonFormField<String>(
-            initialValue: _translationStyle,
-            decoration: const InputDecoration(
-              labelText: '翻译风格',
-              prefixIcon: Icon(Icons.tune),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'natural', child: Text('自然')),
-              DropdownMenuItem(value: 'accurate', child: Text('准确')),
-              DropdownMenuItem(value: 'formal', child: Text('正式')),
-              DropdownMenuItem(value: 'concise', child: Text('简洁')),
-            ],
-            onChanged: (value) {
-              if (value == null) {
-                return;
-              }
-              setState(() => _translationStyle = value);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _chunkSizeController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: '长文本分段长度',
-              prefixIcon: Icon(Icons.segment),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _glossaryController,
-            minLines: 3,
-            maxLines: 6,
-            decoration: const InputDecoration(
-              labelText: '术语表 / 长文本术语提示',
-              hintText:
-                  'ClearTranslate = ClearTranslate\nlocal dictionary = 本地词典',
-              prefixIcon: Icon(Icons.article_outlined),
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _saveHistoryEnabled,
-            title: const Text('保存历史记录'),
-            secondary: const Icon(Icons.history),
-            onChanged: (value) {
-              setState(() => _saveHistoryEnabled = value);
-            },
-          ),
-          const SizedBox(height: 24),
-          const _SettingsSectionTitle('桌面快捷键'),
-          _HotKeySettingTile(
-            title: '唤出翻译界面',
-            hotKey: _showWindowHotKey,
-            onRecord: () async {
-              final hotKey = await _recordHotKey(
-                context,
-                title: '录制唤出翻译界面快捷键',
-                initialHotKey: _showWindowHotKey,
-              );
-              if (hotKey != null) {
-                setState(() => _showWindowHotKey = hotKey);
-              }
-            },
-            onReset: () {
-              setState(
-                  () => _showWindowHotKey = DesktopHotKeys.defaultShowWindow());
-            },
-          ),
-          const SizedBox(height: 8),
-          _HotKeySettingTile(
-            title: '清空输入区',
-            hotKey: _clearInputHotKey,
-            onRecord: () async {
-              final hotKey = await _recordHotKey(
-                context,
-                title: '录制清空输入区快捷键',
-                initialHotKey: _clearInputHotKey,
-              );
-              if (hotKey != null) {
-                setState(() => _clearInputHotKey = hotKey);
-              }
-            },
-            onReset: () {
-              setState(
-                  () => _clearInputHotKey = DesktopHotKeys.defaultClearInput());
-            },
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: state.isSaving
-                ? null
-                : () => _saveSettings(context, controller),
-            icon: state.isSaving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save),
-            label: const Text('保存设置'),
-          ),
-          if (state.isLoading) ...[
-            const SizedBox(height: 16),
-            const LinearProgressIndicator(),
-          ],
-          if (state.errorMessage != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              state.errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          if (state.successMessage != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              state.successMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

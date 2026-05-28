@@ -210,7 +210,7 @@ Delivered:
 
 ## Phase 5: Mobile Adaptation
 
-Status: next.
+Status: in progress.
 
 Goal:
 

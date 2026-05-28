@@ -134,6 +134,7 @@ class _HistoryBodyState extends State<_HistoryBody> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 860;
+          final isCompact = constraints.maxWidth < 600;
           final listPane = _HistoryListPane(
             records: records,
             selectedId: selectedRecord?.id,
@@ -142,6 +143,18 @@ class _HistoryBodyState extends State<_HistoryBody> {
               setState(() => _query = value.trim());
             },
             onSelect: (record) {
+              if (isCompact) {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => _HistoryDetailScreen(
+                      record: record,
+                      onCopy: widget.onCopy,
+                      onDelete: widget.onDelete,
+                    ),
+                  ),
+                );
+                return;
+              }
               setState(() => _selectedId = record.id);
             },
             onCopy: widget.onCopy,
@@ -154,6 +167,10 @@ class _HistoryBodyState extends State<_HistoryBody> {
           );
 
           if (!isWide) {
+            if (isCompact) {
+              return listPane;
+            }
+
             return Column(
               children: [
                 SizedBox(height: 300, child: listPane),
@@ -358,6 +375,35 @@ class _HistoryRecordTile extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryDetailScreen extends StatelessWidget {
+  const _HistoryDetailScreen({
+    required this.record,
+    required this.onCopy,
+    required this.onDelete,
+  });
+
+  final HistoryRecord record;
+  final ValueChanged<String> onCopy;
+  final ValueChanged<String> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('历史详情')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: _HistoryDetailPane(
+            record: record,
+            onCopy: onCopy,
+            onDelete: onDelete,
           ),
         ),
       ),
