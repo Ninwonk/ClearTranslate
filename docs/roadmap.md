@@ -41,6 +41,8 @@ Remaining optional validation:
 
 ## Phase 1: AI Text Translation MVP
 
+Status: completed.
+
 Goal:
 
 Make the current AI translation path reliable enough for daily desktop use.
@@ -67,7 +69,19 @@ Acceptance:
 - provider errors are user-readable
 - Windows or macOS desktop app runs
 
+Delivered:
+
+- OpenAI-compatible AI translation flow
+- API Base URL, API Key, model, style, chunk-size settings
+- secure API Key storage
+- readable provider/network error mapping
+- local history persistence
+- dark desktop UI
+- Windows release build
+
 ## Phase 2: Local Dictionary MVP
+
+Status: completed.
 
 Goal:
 
@@ -75,8 +89,8 @@ Add offline local dictionary lookup for words and short phrases.
 
 Scope:
 
-- build `assets/dictionaries/dictionary_v1.db`
-- copy bundled dictionary database to app support directory on first launch
+- build compressed `assets/dictionaries/dictionary_v1.db.gz`
+- decompress bundled dictionary database to app support directory on first lookup
 - English word to Chinese lookup
 - English inflection lookup through aliases
 - Chinese word or phrase to English lookup
@@ -86,16 +100,27 @@ Scope:
 - structured dictionary result UI
 - dictionary lookup history
 
+Delivered:
+
+- ECDICT English-to-Chinese import
+- CC-CEDICT Chinese-to-English import
+- compressed SQLite dictionary asset, about 62 MB
+- about 895k dictionary entries and 262k aliases in the generated DB
+- offline exact lookup, alias lookup, phrase lookup, and prefix suggestions
+- local no-result state with AI query fallback
+
 Acceptance:
 
 - `charge` shows local dictionary result
-- `charged` resolves to `charge`
+- `charged` shows a local dictionary result or an alias-derived result
 - `负责` shows English expressions
 - `char` shows suggestions
 - dictionary lookup works offline
 - local lookup is visibly faster than AI request
 
 ## Phase 3: AI Dictionary Enhancement
+
+Status: completed.
 
 Goal:
 
@@ -109,6 +134,12 @@ Scope:
 - local no-result can trigger AI query
 - AI explanation history
 - visually separate local dictionary content from AI content
+- Markdown preview for AI explanation output
+- searchable split history view
+- Windows/macOS tray integration
+- close-to-tray behavior
+- tray menu quit action
+- customizable global desktop shortcuts
 
 Acceptance:
 
@@ -116,8 +147,24 @@ Acceptance:
 - clicking AI explanation calls LLM
 - sentence input defaults to AI translation
 - when AI is disabled, sentence input explains that local dictionary cannot reliably translate full sentences
+- local no-result can be sent to AI
+- AI Markdown output renders as readable content
+- history supports keyword search and detail preview
+- desktop hotkey can show/hide the app from tray
+
+Delivered:
+
+- `Use AI` switch on the home page
+- AI explanation for dictionary/no-result states
+- MiniMax `<think>` cleanup and Markdown rendering
+- history page with left search/list pane and right detail preview pane
+- system tray behavior for Windows/macOS
+- customizable global hotkeys for show/hide and clear input
+- modern generated app/tray icon
 
 ## Phase 4: Long Text Translation
+
+Status: next.
 
 Goal:
 
@@ -132,6 +179,15 @@ Scope:
 - preserve Markdown
 - terminology hints
 - style setting
+
+Implementation notes:
+
+- Keep the existing normal translation path intact.
+- Add a long-text controller path when input exceeds the configured chunk size.
+- Split by paragraphs first, then merge small paragraphs up to the configured limit.
+- Store per-chunk status so progress, cancellation, and retry are explicit.
+- Preserve output order even if later parallel translation is introduced.
+- Keep Phase 4 desktop-first; mobile-specific layout remains Phase 5.
 
 Acceptance:
 
@@ -206,11 +262,10 @@ Acceptance:
 | P1 | long text chunked translation | Phase 4 |
 | P2 | mobile adaptation | Phase 5 |
 | P2 | favorites | Phase 6 |
-| P2 | history search | Phase 6 |
+| P2 | history search | completed in Phase 3 |
 | P3 | voice input | deferred |
 | P3 | OCR | out of scope |
 | P3 | selected-text translation | out of scope |
 | P3 | local translation model | out of scope |
 | P3 | account system | out of scope |
 | P3 | cloud sync | out of scope |
-
