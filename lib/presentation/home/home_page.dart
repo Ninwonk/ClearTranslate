@@ -4,6 +4,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/translate/translate_controller.dart';
+import '../../shared/desktop/desktop_commands.dart';
 import '../../shared/input/input_classifier.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -17,10 +18,29 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final _inputController = TextEditingController();
+  final _inputFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    DesktopCommands.instance.clearInputRequests.addListener(
+      _handleDesktopClearRequest,
+    );
+    DesktopCommands.instance.showTranslateRequests.addListener(
+      _handleDesktopShowRequest,
+    );
+  }
 
   @override
   void dispose() {
+    DesktopCommands.instance.clearInputRequests.removeListener(
+      _handleDesktopClearRequest,
+    );
+    DesktopCommands.instance.showTranslateRequests.removeListener(
+      _handleDesktopShowRequest,
+    );
     _inputController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -111,6 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           title: '输入',
                           child: TextField(
                             controller: _inputController,
+                            focusNode: _inputFocusNode,
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
@@ -186,6 +207,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _clear(TranslateController controller) {
     _inputController.clear();
     controller.clear();
+  }
+
+  void _handleDesktopClearRequest() {
+    _clear(ref.read(translateControllerProvider.notifier));
+    _inputFocusNode.requestFocus();
+  }
+
+  void _handleDesktopShowRequest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _inputFocusNode.requestFocus();
+    });
   }
 
   Future<void> _copyResult(BuildContext context, String text) async {
