@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 class DictionaryAssetLoader {
   const DictionaryAssetLoader({
-    this.assetPath = 'assets/dictionaries/dictionary_v1.db',
+    this.assetPath = 'assets/dictionaries/dictionary_v1.db.gz',
     Directory? supportDirectory,
   }) : _supportDirectory = supportDirectory;
 
@@ -20,13 +20,25 @@ class DictionaryAssetLoader {
         Directory(p.join(directory.path, 'dictionaries'));
     final targetFile =
         File(p.join(dictionaryDirectory.path, 'dictionary_v1.db'));
+    final fingerprintFile = File(
+      p.join(dictionaryDirectory.path, 'dictionary_v1.db.asset-size'),
+    );
 
     await dictionaryDirectory.create(recursive: true);
 
     final assetData = await rootBundle.load(assetPath);
-    final bytes = assetData.buffer.asUint8List();
+    final compressedBytes = assetData.buffer.asUint8List();
+    final assetFingerprint = compressedBytes.length.toString();
 
+    if (await targetFile.exists() &&
+        await fingerprintFile.exists() &&
+        await fingerprintFile.readAsString() == assetFingerprint) {
+      return targetFile;
+    }
+
+    final bytes = GZipCodec().decode(compressedBytes);
     await targetFile.writeAsBytes(bytes, flush: true);
+    await fingerprintFile.writeAsString(assetFingerprint, flush: true);
 
     return targetFile;
   }

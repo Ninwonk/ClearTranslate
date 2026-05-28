@@ -32,4 +32,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/dictionaries/dictionary_v1.db
+    - assets/dictionaries/dictionary_v1.db.gz
