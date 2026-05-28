@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -128,6 +129,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isWide = constraints.maxWidth >= 760;
+                          final useMobileResultLayout =
+                              !isWide && _isMobilePlatform;
                           final inputPanel = _TextPanel(
                             title: '输入',
                             child: TextField(
@@ -147,6 +150,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: _ResultView(
                               text: state.outputText,
                               mode: state.currentMode,
+                              scrollPlainText: useMobileResultLayout,
                             ),
                           );
 
@@ -161,10 +165,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                           }
 
                           return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(flex: 5, child: inputPanel),
+                              Expanded(
+                                flex: useMobileResultLayout ? 4 : 5,
+                                child: inputPanel,
+                              ),
                               const SizedBox(height: 12),
-                              Expanded(flex: 4, child: outputPanel),
+                              Expanded(
+                                flex: useMobileResultLayout ? 5 : 4,
+                                child: outputPanel,
+                              ),
                             ],
                           );
                         },
@@ -242,6 +253,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
+bool get _isMobilePlatform {
+  return defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+}
+
 class _LongTextProgress extends StatelessWidget {
   const _LongTextProgress({required this.state});
 
@@ -270,10 +286,12 @@ class _ResultView extends StatelessWidget {
   const _ResultView({
     required this.text,
     required this.mode,
+    required this.scrollPlainText,
   });
 
   final String text;
   final InputMode mode;
+  final bool scrollPlainText;
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +300,17 @@ class _ResultView extends StatelessWidget {
     }
 
     if (mode != InputMode.aiExplanation) {
-      return SelectableText(text);
+      final textView = SelectableText(text);
+      if (!scrollPlainText) {
+        return textView;
+      }
+
+      return SingleChildScrollView(
+        child: SizedBox(
+          width: double.infinity,
+          child: textView,
+        ),
+      );
     }
 
     final theme = Theme.of(context);
