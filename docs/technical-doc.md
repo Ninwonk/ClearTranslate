@@ -280,7 +280,7 @@ Hotkey registration failure should be non-fatal because shortcuts may be reserve
 
 ## Phase 4 Long Text Translation Design
 
-Status: implemented, pending acceptance.
+Status: completed.
 
 Long text translation should add a separate orchestration layer:
 

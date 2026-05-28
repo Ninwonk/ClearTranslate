@@ -164,7 +164,7 @@ Delivered:
 
 ## Phase 4: Long Text Translation
 
-Status: implemented, pending acceptance.
+Status: completed.
 
 Goal:
 
@@ -209,6 +209,8 @@ Delivered:
 - Markdown-oriented prompt requirements for structure preservation
 
 ## Phase 5: Mobile Adaptation
+
+Status: next.
 
 Goal:
 

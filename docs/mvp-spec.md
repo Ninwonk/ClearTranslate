@@ -94,7 +94,7 @@ Delivered:
 
 ## Phase 4 MVP: Long Text Translation
 
-Status: implemented, pending acceptance.
+Status: completed.
 
 Goal:
 
