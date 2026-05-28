@@ -112,92 +112,94 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _LanguageBar(
-                    sourceLabel: state.sourceLanguageLabel,
-                    targetLabel: state.targetLanguageLabel,
-                    aiEnabled: state.aiEnabled,
-                    onAiChanged: controller.setAiEnabled,
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= 760;
-                        final inputPanel = _TextPanel(
-                          title: '输入',
-                          child: TextField(
-                            controller: _inputController,
-                            focusNode: _inputFocusNode,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            decoration: const InputDecoration(
-                              hintText: '粘贴或输入要翻译的文本...',
-                              border: InputBorder.none,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _LanguageBar(
+                      sourceLabel: state.sourceLanguageLabel,
+                      targetLabel: state.targetLanguageLabel,
+                      aiEnabled: state.aiEnabled,
+                      onAiChanged: controller.setAiEnabled,
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth >= 760;
+                          final inputPanel = _TextPanel(
+                            title: '输入',
+                            child: TextField(
+                              controller: _inputController,
+                              focusNode: _inputFocusNode,
+                              maxLines: null,
+                              expands: true,
+                              textAlignVertical: TextAlignVertical.top,
+                              decoration: const InputDecoration(
+                                hintText: '粘贴或输入要翻译的文本...',
+                                border: InputBorder.none,
+                              ),
                             ),
-                          ),
-                        );
-                        final outputPanel = _TextPanel(
-                          title: state.resultLabel,
-                          child: _ResultView(
-                            text: state.outputText,
-                            mode: state.currentMode,
-                          ),
-                        );
+                          );
+                          final outputPanel = _TextPanel(
+                            title: state.resultLabel,
+                            child: _ResultView(
+                              text: state.outputText,
+                              mode: state.currentMode,
+                            ),
+                          );
 
-                        if (isWide) {
-                          return Row(
+                          if (isWide) {
+                            return Row(
+                              children: [
+                                Expanded(child: inputPanel),
+                                const SizedBox(width: 12),
+                                Expanded(child: outputPanel),
+                              ],
+                            );
+                          }
+
+                          return Column(
                             children: [
-                              Expanded(child: inputPanel),
-                              const SizedBox(width: 12),
-                              Expanded(child: outputPanel),
+                              Expanded(flex: 5, child: inputPanel),
+                              const SizedBox(height: 12),
+                              Expanded(flex: 4, child: outputPanel),
                             ],
                           );
-                        }
-
-                        return Column(
-                          children: [
-                            Expanded(child: inputPanel),
-                            const SizedBox(height: 12),
-                            Expanded(child: outputPanel),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ActionBar(
-                    actionLabel: state.actionLabel,
-                    isLoading: state.isLoading,
-                    hasOutput: state.outputText.isNotEmpty,
-                    canUseAIExplanation: state.canUseAIExplanation,
-                    canRetryFailedChunks: state.canRetryFailedChunks,
-                    aiAssistLabel: state.aiAssistLabel,
-                    onTranslate: () => _translate(controller),
-                    onExplain: controller.explainWithAI,
-                    onRetryFailedChunks: controller.retryFailedChunks,
-                    onClear: () => _clear(controller),
-                    onCancel: controller.cancel,
-                    onCopy: () => _copyResult(context, state.outputText),
-                  ),
-                  if (state.isLongText) ...[
-                    const SizedBox(height: 8),
-                    _LongTextProgress(state: state),
-                  ],
-                  if (state.errorMessage != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      state.errorMessage!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                        },
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    _ActionBar(
+                      actionLabel: state.actionLabel,
+                      isLoading: state.isLoading,
+                      hasOutput: state.outputText.isNotEmpty,
+                      canUseAIExplanation: state.canUseAIExplanation,
+                      canRetryFailedChunks: state.canRetryFailedChunks,
+                      aiAssistLabel: state.aiAssistLabel,
+                      onTranslate: () => _translate(controller),
+                      onExplain: controller.explainWithAI,
+                      onRetryFailedChunks: controller.retryFailedChunks,
+                      onClear: () => _clear(controller),
+                      onCancel: controller.cancel,
+                      onCopy: () => _copyResult(context, state.outputText),
+                    ),
+                    if (state.isLongText) ...[
+                      const SizedBox(height: 8),
+                      _LongTextProgress(state: state),
+                    ],
+                    if (state.errorMessage != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        state.errorMessage!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -321,26 +323,46 @@ class _LanguageBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Chip(label: Text(sourceLabel)),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Icon(Icons.arrow_forward),
-        ),
-        Chip(label: Text(targetLabel)),
-        const Spacer(),
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 560;
+        final languageControls = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Chip(label: Text(sourceLabel)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.arrow_forward),
+            ),
+            Chip(label: Text(targetLabel)),
+          ],
+        );
+        final aiSwitch = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('启用 AI'),
-            Switch(
-              value: aiEnabled,
-              onChanged: onAiChanged,
-            ),
+            Switch(value: aiEnabled, onChanged: onAiChanged),
           ],
-        ),
-      ],
+        );
+
+        if (!isCompact) {
+          return Row(
+            children: [
+              languageControls,
+              const Spacer(),
+              aiSwitch,
+            ],
+          );
+        }
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          children: [languageControls, aiSwitch],
+        );
+      },
     );
   }
 }
@@ -407,49 +429,68 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        FilledButton.icon(
-          onPressed: isLoading ? null : onTranslate,
-          icon: const Icon(Icons.translate),
-          label: Text(actionLabel),
-        ),
-        const SizedBox(width: 8),
+    final primaryActions = [
+      FilledButton.icon(
+        onPressed: isLoading ? null : onTranslate,
+        icon: const Icon(Icons.translate),
+        label: Text(actionLabel),
+      ),
+      OutlinedButton.icon(
+        onPressed: onClear,
+        icon: const Icon(Icons.clear),
+        label: const Text('清空'),
+      ),
+      OutlinedButton.icon(
+        onPressed: hasOutput ? onCopy : null,
+        icon: const Icon(Icons.content_copy),
+        label: const Text('复制'),
+      ),
+      if (canUseAIExplanation)
         OutlinedButton.icon(
-          onPressed: onClear,
-          icon: const Icon(Icons.clear),
-          label: const Text('清空'),
+          onPressed: isLoading ? null : onExplain,
+          icon: const Icon(Icons.auto_awesome),
+          label: Text(aiAssistLabel),
         ),
-        const SizedBox(width: 8),
+      if (canRetryFailedChunks)
         OutlinedButton.icon(
-          onPressed: hasOutput ? onCopy : null,
-          icon: const Icon(Icons.content_copy),
-          label: const Text('复制'),
+          onPressed: isLoading ? null : onRetryFailedChunks,
+          icon: const Icon(Icons.refresh),
+          label: const Text('重试失败分段'),
         ),
-        if (canUseAIExplanation) ...[
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            onPressed: isLoading ? null : onExplain,
-            icon: const Icon(Icons.auto_awesome),
-            label: Text(aiAssistLabel),
-          ),
-        ],
-        if (canRetryFailedChunks) ...[
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            onPressed: isLoading ? null : onRetryFailedChunks,
-            icon: const Icon(Icons.refresh),
-            label: const Text('重试失败分段'),
-          ),
-        ],
-        const Spacer(),
-        if (isLoading)
-          TextButton.icon(
-            onPressed: onCancel,
-            icon: const Icon(Icons.stop),
-            label: const Text('取消'),
-          ),
-      ],
+      if (isLoading)
+        TextButton.icon(
+          onPressed: onCancel,
+          icon: const Icon(Icons.stop),
+          label: const Text('取消'),
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 640) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: primaryActions,
+            ),
+          );
+        }
+
+        return Row(
+          children: [
+            ...primaryActions.take(primaryActions.length - (isLoading ? 1 : 0)),
+            const Spacer(),
+            if (isLoading) primaryActions.last,
+          ].expand((child) sync* {
+            yield child;
+            if (child != primaryActions.last && child is! Spacer) {
+              yield const SizedBox(width: 8);
+            }
+          }).toList(),
+        );
+      },
     );
   }
 }
