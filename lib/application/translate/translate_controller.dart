@@ -140,8 +140,9 @@ class TranslateController extends StateNotifier<TranslateState> {
     try {
       final result = await _dictionaryRepository.lookup(text);
       final outputText = _formatDictionaryResult(result);
-      final canUseAIExplanation =
-          result.hasEntries || outputText.contains('本地词典没有找到结果');
+      final canUseAIExplanation = result.hasEntries ||
+          result.suggestions.isNotEmpty ||
+          outputText.contains('本地词典没有找到结果');
 
       state = state.copyWith(
         isLoading: false,
@@ -270,7 +271,7 @@ class TranslateController extends StateNotifier<TranslateState> {
         ),
       );
 
-      final outputText = 'AI 解释\n\n${result.translatedText}';
+      final outputText = result.translatedText.trim();
       state = state.copyWith(
         isLoading: false,
         outputText: outputText,
@@ -465,6 +466,16 @@ class TranslateState {
         InputMode.aiExplanation => 'AI 解释',
         InputMode.aiTranslation => '译文',
       };
+
+  String get aiAssistLabel {
+    if (currentMode != InputMode.localDictionary) {
+      return 'AI 深度解释';
+    }
+    if (outputText.contains('没有精确命中') || outputText.contains('没有找到结果')) {
+      return '使用 AI 查询';
+    }
+    return 'AI 深度解释';
+  }
 
   TranslateState copyWith({
     TranslationLanguage? sourceLanguage,

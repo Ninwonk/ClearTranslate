@@ -11,6 +11,35 @@ ASSET_DB = ROOT / "assets" / "dictionaries" / "dictionary_v1.db"
 SCHEMA = Path(__file__).with_name("schema.sql")
 
 
+def english_entry(
+    headword: str,
+    phonetic: str,
+    part_of_speech: str,
+    short_translation: str,
+    definition: str,
+    frequency_rank: int,
+    aliases: list[tuple[str, str]] | None = None,
+    phrases: list[tuple[str, str]] | None = None,
+    examples: list[tuple[str, str]] | None = None,
+    tags: str = "seed,common",
+) -> dict:
+    return {
+        "headword": headword,
+        "language": "en",
+        "direction": "en_to_zh",
+        "phonetic": phonetic,
+        "part_of_speech": part_of_speech,
+        "short_translation": short_translation,
+        "definition": definition,
+        "source_name": "ClearTranslate Seed",
+        "frequency_rank": frequency_rank,
+        "tags": tags,
+        "aliases": aliases or [],
+        "phrases": phrases or [],
+        "examples": examples or [],
+    }
+
+
 ENTRIES = [
     {
         "headword": "charge",
@@ -138,6 +167,253 @@ n.
     },
 ]
 
+ENTRIES.extend(
+    [
+        english_entry(
+            "hello",
+            "həˈloʊ",
+            "interj.; n.",
+            "你好；喂；问候",
+            "interj.\n1. 你好；您好\n2. 喂，用于打招呼或接电话\nn.\n1. 问候；招呼",
+            300,
+            aliases=[("hi", "informal_greeting")],
+            examples=[("Hello, nice to meet you.", "你好，很高兴见到你。")],
+        ),
+        english_entry(
+            "personal",
+            "ˈpɜːrsənl",
+            "adj.",
+            "个人的；私人的；亲自的",
+            "adj.\n1. 个人的；与个人有关的\n2. 私人的；隐私的\n3. 亲自的；本人做出的",
+            900,
+            aliases=[("personally", "adverb"), ("personals", "plural")],
+            phrases=[
+                ("personal information", "个人信息"),
+                ("personal opinion", "个人观点"),
+                ("personal computer", "个人电脑"),
+            ],
+            examples=[
+                ("This is my personal opinion.", "这是我的个人观点。"),
+                (
+                    "Please do not share personal information.",
+                    "请不要分享个人信息。",
+                ),
+            ],
+        ),
+        english_entry(
+            "world",
+            "wɜːrld",
+            "n.",
+            "世界；领域；世人",
+            "n.\n1. 世界；地球\n2. 某个领域或圈子\n3. 世人；人类社会",
+            500,
+            aliases=[("worlds", "plural")],
+            examples=[("The world is changing fast.", "世界正在快速变化。")],
+        ),
+        english_entry(
+            "good",
+            "ɡʊd",
+            "adj.; n.",
+            "好的；有益的；善良的",
+            "adj.\n1. 好的；令人满意的\n2. 有益的；有效的\n3. 善良的\nn.\n1. 好处；益处",
+            200,
+            aliases=[("better", "comparative"), ("best", "superlative")],
+        ),
+        english_entry(
+            "morning",
+            "ˈmɔːrnɪŋ",
+            "n.",
+            "早晨；上午",
+            "n.\n1. 早晨；上午\n2. 一天的开始阶段",
+            850,
+            aliases=[("mornings", "plural")],
+            phrases=[("good morning", "早上好")],
+        ),
+        english_entry(
+            "afternoon",
+            "ˌæftərˈnuːn",
+            "n.",
+            "下午",
+            "n.\n1. 下午；午后",
+            1100,
+            aliases=[("afternoons", "plural")],
+        ),
+        english_entry(
+            "available",
+            "əˈveɪləbl",
+            "adj.",
+            "可用的；有空的；可获得的",
+            "adj.\n1. 可用的；可获得的\n2. 有空的；可见面的\n3. 可购得的",
+            950,
+            phrases=[("available for", "可用于；有时间参加")],
+            examples=[
+                (
+                    "I am available tomorrow afternoon.",
+                    "我明天下午有空。",
+                ),
+            ],
+        ),
+        english_entry(
+            "tomorrow",
+            "təˈmɑːroʊ",
+            "n.; adv.",
+            "明天；在明天",
+            "n.\n1. 明天\nadv.\n1. 在明天",
+            700,
+        ),
+        english_entry(
+            "today",
+            "təˈdeɪ",
+            "n.; adv.",
+            "今天；在今天",
+            "n.\n1. 今天；当今\nadv.\n1. 在今天；现在",
+            650,
+        ),
+        english_entry(
+            "translate",
+            "trænsˈleɪt",
+            "v.",
+            "翻译；转化；解释",
+            "v.\n1. 翻译\n2. 转化为另一种形式\n3. 解释；说明",
+            1700,
+            aliases=[
+                ("translates", "third_person_singular"),
+                ("translated", "past_tense_or_past_participle"),
+                ("translating", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "translation",
+            "trænsˈleɪʃn",
+            "n.",
+            "翻译；译文；转化",
+            "n.\n1. 翻译行为\n2. 译文\n3. 转化；转换",
+            1600,
+            aliases=[("translations", "plural")],
+        ),
+        english_entry(
+            "dictionary",
+            "ˈdɪkʃəneri",
+            "n.",
+            "词典；字典",
+            "n.\n1. 词典；字典\n2. 专门术语表",
+            2500,
+            aliases=[("dictionaries", "plural")],
+        ),
+        english_entry(
+            "history",
+            "ˈhɪstri",
+            "n.",
+            "历史；历史记录",
+            "n.\n1. 历史\n2. 过去经历\n3. 应用中的历史记录",
+            1900,
+            aliases=[("histories", "plural")],
+        ),
+        english_entry(
+            "setting",
+            "ˈsetɪŋ",
+            "n.",
+            "设置；环境；背景",
+            "n.\n1. 设置；配置\n2. 环境；场景\n3. 背景",
+            2300,
+            aliases=[("settings", "plural")],
+        ),
+        english_entry(
+            "model",
+            "ˈmɑːdl",
+            "n.; v.",
+            "模型；型号；模范；建模",
+            "n.\n1. 模型；样式\n2. 型号\n3. 模范\nv.\n1. 建模；模拟",
+            1800,
+            aliases=[
+                ("models", "plural_or_third_person_singular"),
+                ("modeled", "past_tense_or_past_participle"),
+                ("modelling", "present_participle"),
+                ("modeling", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "input",
+            "ˈɪnpʊt",
+            "n.; v.",
+            "输入；投入；输入内容",
+            "n.\n1. 输入；输入内容\n2. 投入；意见\nv.\n1. 输入数据",
+            2100,
+            aliases=[
+                ("inputs", "plural_or_third_person_singular"),
+                ("inputted", "past_tense_or_past_participle"),
+                ("inputting", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "output",
+            "ˈaʊtpʊt",
+            "n.; v.",
+            "输出；产出；输出内容",
+            "n.\n1. 输出；输出内容\n2. 产量；产出\nv.\n1. 输出数据",
+            2200,
+            aliases=[
+                ("outputs", "plural_or_third_person_singular"),
+                ("outputted", "past_tense_or_past_participle"),
+                ("outputting", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "copy",
+            "ˈkɑːpi",
+            "n.; v.",
+            "复制；副本；文案",
+            "n.\n1. 副本；复制件\n2. 文案\nv.\n1. 复制\n2. 抄写；模仿",
+            1300,
+            aliases=[
+                ("copies", "plural_or_third_person_singular"),
+                ("copied", "past_tense_or_past_participle"),
+                ("copying", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "clear",
+            "klɪr",
+            "adj.; v.",
+            "清楚的；清除；明确的",
+            "adj.\n1. 清楚的；明确的\n2. 透明的\nv.\n1. 清除；清空\n2. 通过；批准",
+            1000,
+            aliases=[
+                ("clears", "third_person_singular"),
+                ("cleared", "past_tense_or_past_participle"),
+                ("clearing", "present_participle"),
+            ],
+        ),
+        english_entry(
+            "simple",
+            "ˈsɪmpl",
+            "adj.",
+            "简单的；朴素的；易懂的",
+            "adj.\n1. 简单的；容易理解的\n2. 朴素的；不复杂的",
+            800,
+            aliases=[("simpler", "comparative"), ("simplest", "superlative")],
+        ),
+        english_entry(
+            "fast",
+            "fæst",
+            "adj.; adv.",
+            "快的；快速地",
+            "adj.\n1. 快的；迅速的\nadv.\n1. 快速地",
+            750,
+            aliases=[("faster", "comparative"), ("fastest", "superlative")],
+        ),
+        english_entry(
+            "responsible",
+            "rɪˈspɑːnsəbl",
+            "adj.",
+            "负责的；有责任的；可靠的",
+            "adj.\n1. 负责的；承担责任的\n2. 可靠的；可信赖的\n3. 是原因的",
+            1000,
+            phrases=[("be responsible for", "负责；对某事承担责任")],
+        ),
+    ]
+)
+
 
 def main() -> None:
     ASSET_DB.parent.mkdir(parents=True, exist_ok=True)
@@ -260,4 +536,3 @@ def insert_entry(connection: sqlite3.Connection, entry: dict) -> None:
 
 if __name__ == "__main__":
     main()
-

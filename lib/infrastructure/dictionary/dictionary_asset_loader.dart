@@ -26,10 +26,7 @@ class DictionaryAssetLoader {
     final assetData = await rootBundle.load(assetPath);
     final bytes = assetData.buffer.asUint8List();
 
-    if (!await targetFile.exists() ||
-        await targetFile.length() != bytes.length) {
-      await targetFile.writeAsBytes(bytes, flush: true);
-    }
+    await targetFile.writeAsBytes(bytes, flush: true);
 
     return targetFile;
   }

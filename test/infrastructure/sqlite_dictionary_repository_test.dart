@@ -23,6 +23,17 @@ void main() {
     expect(result.entries.first.shortTranslation, contains('收费'));
   });
 
+  test('looks up common seed words locally', () async {
+    final personal = await repository.lookup('Personal');
+    final hello = await repository.lookup('hello');
+
+    expect(personal.entries, isNotEmpty);
+    expect(personal.entries.first.headword, 'personal');
+    expect(personal.entries.first.shortTranslation, contains('个人'));
+    expect(hello.entries, isNotEmpty);
+    expect(hello.entries.first.shortTranslation, contains('你好'));
+  });
+
   test('resolves English inflection through aliases', () async {
     final result = await repository.lookup('charged');
 

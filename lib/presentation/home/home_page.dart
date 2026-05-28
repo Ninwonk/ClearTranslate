@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/translate/translate_controller.dart';
+import '../../shared/input/input_classifier.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, required this.onOpenSettings});
@@ -120,10 +122,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                         );
                         final outputPanel = _TextPanel(
                           title: state.resultLabel,
-                          child: SelectableText(
-                            state.outputText.isEmpty
-                                ? '翻译结果会显示在这里'
-                                : state.outputText,
+                          child: _ResultView(
+                            text: state.outputText,
+                            mode: state.currentMode,
                           ),
                         );
 
@@ -153,6 +154,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     isLoading: state.isLoading,
                     hasOutput: state.outputText.isNotEmpty,
                     canUseAIExplanation: state.canUseAIExplanation,
+                    aiAssistLabel: state.aiAssistLabel,
                     onTranslate: () => _translate(controller),
                     onExplain: controller.explainWithAI,
                     onClear: () => _clear(controller),
@@ -193,6 +195,48 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('已复制译文')),
+    );
+  }
+}
+
+class _ResultView extends StatelessWidget {
+  const _ResultView({
+    required this.text,
+    required this.mode,
+  });
+
+  final String text;
+  final InputMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.isEmpty) {
+      return const SelectableText('翻译结果会显示在这里');
+    }
+
+    if (mode != InputMode.aiExplanation) {
+      return SelectableText(text);
+    }
+
+    final theme = Theme.of(context);
+    return Markdown(
+      data: text,
+      selectable: true,
+      padding: EdgeInsets.zero,
+      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+        h1: theme.textTheme.titleLarge,
+        h2: theme.textTheme.titleMedium,
+        h3: theme.textTheme.titleSmall,
+        p: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
+        blockquoteDecoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
+              width: 3,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -273,6 +317,7 @@ class _ActionBar extends StatelessWidget {
     required this.isLoading,
     required this.hasOutput,
     required this.canUseAIExplanation,
+    required this.aiAssistLabel,
     required this.onTranslate,
     required this.onExplain,
     required this.onClear,
@@ -284,6 +329,7 @@ class _ActionBar extends StatelessWidget {
   final bool isLoading;
   final bool hasOutput;
   final bool canUseAIExplanation;
+  final String aiAssistLabel;
   final VoidCallback onTranslate;
   final VoidCallback onExplain;
   final VoidCallback onClear;
@@ -316,7 +362,7 @@ class _ActionBar extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: isLoading ? null : onExplain,
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('AI 深度解释'),
+            label: Text(aiAssistLabel),
           ),
         ],
         const Spacer(),

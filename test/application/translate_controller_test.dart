@@ -136,9 +136,50 @@ void main() {
     await controller.explainWithAI();
 
     expect(fakeProvider.lastRequest?.mode.name, 'dictionary');
-    expect(controller.state.outputText, contains('AI 解释'));
     expect(controller.state.outputText, contains('核心含义'));
     expect(historyRepository.records.first.engine, 'llm_api');
+  });
+
+  test('offers ai query when local dictionary has no exact hit', () async {
+    final repository = FakeSettingsRepository(initialApiKey: 'secret-key');
+    final historyRepository = FakeHistoryRepository();
+    final dictionaryRepository = FakeDictionaryRepository(
+      result: const DictionaryLookupResult(
+        suggestions: [
+          DictionarySuggestion(
+            headword: 'personal',
+            shortTranslation: '个人的；私人的',
+          ),
+        ],
+      ),
+    );
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      dictionaryRepository,
+      (config, apiKey) => FakeTranslationProvider('unused'),
+    );
+
+    await controller.translate('person');
+
+    expect(controller.state.canUseAIExplanation, isTrue);
+    expect(controller.state.aiAssistLabel, '使用 AI 查询');
+  });
+
+  test('offers ai query when local dictionary has no result', () async {
+    final repository = FakeSettingsRepository(initialApiKey: 'secret-key');
+    final historyRepository = FakeHistoryRepository();
+    final controller = TranslateController(
+      repository,
+      historyRepository,
+      FakeDictionaryRepository(result: const DictionaryLookupResult()),
+      (config, apiKey) => FakeTranslationProvider('unused'),
+    );
+
+    await controller.translate('unknownword');
+
+    expect(controller.state.canUseAIExplanation, isTrue);
+    expect(controller.state.aiAssistLabel, '使用 AI 查询');
   });
 
   test('does not translate sentences when ai is disabled', () async {
